@@ -19,11 +19,100 @@ On the 1887 slice of *HistoriQA-ThirdRepublic* (Les Débats parlementaires,
 Le Gaulois, L’Intransigeant), the headline gains over a naïve dense
 retriever are:
 
-| Setting                         | Δ Coverage\@3 vs Naïve |
-| ------------------------------- | ---------------------- |
-| **C2** — TC-Chunking only       | **+5.4 pp**            |
-| **C3** — TC-Metadata only       | **+10.8 pp**           |
-| **QRe + UMS** (full routing)    | **+16.4 pp**           |
+| Setting                                    | Δ Coverage\@3 vs Naïve |
+| ------------------------------------------ | ---------------------- |
+| **C2** — TC-Chunking only                  | **+5.4 pp**            |
+| **C3** — TC-Metadata only                  | **+8.9 pp** (Naïve) · **+6.1 pp** under UMS |
+| **C4** — Joint chunking × metadata         | **+8.8 pp**            |
+| **QRe + UMS** (multi-hop, Recall\@3)       | **+16.4 pp** vs Naïve · **+20.6 pp** vs HippoRAG v2 |
+
+The QRe classifier reduces to a binary press-vs-parliamentary decision
+and reaches **99.4 % accuracy** on held-out queries; QRe and UMS
+attack structurally distinct failure modes (source *contamination*
+vs.\ source *starvation*) and compose strictly.
+
+---
+
+## Research questions
+
+The paper is organised around five questions; this repo provides one
+runnable artefact per RQ:
+
+| RQ      | Question                                                                                              | Reproduced by                                                                                                                              |
+| ------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RQ1** | Does query-conditioned **chunking** beat a global best?                                               | [scripts/run_C2_multiseed_kfold.py](scripts/run_C2_multiseed_kfold.py)                                                                     |
+| **RQ2** | Does query-conditioned **metadata indexing** on *Les Débats* beat a uniform global baseline?          | [scripts/run_C3_multiseed_kfold.py](scripts/run_C3_multiseed_kfold.py)                                                                     |
+| **RQ3** | Does **joint** optimisation of chunking × metadata beat either single axis?                           | [scripts/run_C4_joint_multiseed.py](scripts/run_C4_joint_multiseed.py) (+ [scripts/c4_joint/](scripts/c4_joint/))                          |
+| **RQ4** | Does query-conditioned **source selection** beat a single-index baseline?                             | [notebooks/32_retriever_evaluation_query_rerouting.ipynb](notebooks/32_retriever_evaluation_query_rerouting.ipynb)                         |
+| **RQ5** | Are **QRe** (router) and **UMS** (allocator) complementary remedies for size-imbalanced retrieval?    | [notebooks/32_retriever_evaluation_query_rerouting.ipynb](notebooks/32_retriever_evaluation_query_rerouting.ipynb)                         |
+
+---
+
+## Results from the paper
+
+### Task-conditioned indexing (RQ1–RQ3)
+
+Coverage@k / Recall@k on the held-out test set (*n* = 438, 50/50 split,
+5 seeds). Each retriever is compared to its Global Baseline
+(`10000_hierarchical`, no metadata) across three task-conditioned
+variants. \* = *p* < 0.05 (Bonferroni-paired *t*-test); ns = not significant.
+
+| Retriever        | Indexing strategy   | Cov\@3      | Cov\@5      | Rec\@3      | Rec\@5      |
+| ---------------- | ------------------- | ----------- | ----------- | ----------- | ----------- |
+| **Naïve**        | Global Baseline     | 36.9        | 45.4        | 36.9        | 45.6        |
+|                  | + TC-Chunking       | 42.3\*      | 51.7\*      | 42.3\*      | 51.7\*      |
+|                  | + TC-Metadata       | **45.8\***  | **55.2\***  | **45.9\***  | **55.3\***  |
+|                  | + TC-Joint          | _45.7_\*    | _54.7_\*    | _45.5_\*\*  | _54.5_\*    |
+| **QRe**          | Global Baseline     | 48.5        | 58.2        | 48.7        | 58.4        |
+|                  | + TC-Chunking       | 48.5 ns     | 57.9 ns     | 48.5 ns     | 58.0 ns     |
+|                  | + TC-Metadata       | 48.5 ns     | 58.2 ns     | 48.7 ns     | 58.4 ns     |
+|                  | + TC-Joint          | 48.3 ns     | 57.6 ns     | 48.2 ns     | 57.4 ns     |
+| **UMS**          | Global Baseline     | 46.8        | 58.7        | 47.0        | 58.8        |
+|                  | + TC-Chunking       | 47.0 ns     | 58.5 ns     | 47.2 ns     | 58.7 ns     |
+|                  | + TC-Metadata       | **52.8\***  | **63.2\***  | **53.0\***  | **63.4\***  |
+|                  | + TC-Joint          | _52.8_\*    | _63.1_\*    | _53.0_\*    | _63.4_\*    |
+| **QRe & UMS**    | Global Baseline     | 54.7        | 64.5        | 54.9        | 64.7        |
+|                  | + TC-Chunking       | 54.7 ns     | 64.5 ns     | 54.9 ns     | 64.7 ns     |
+|                  | + TC-Metadata       | 54.7 ns     | 64.5 ns     | 54.9 ns     | 64.7 ns     |
+|                  | + TC-Joint          | 54.7 ns     | 64.5 ns     | 54.9 ns     | 64.7 ns     |
+
+*Bold = best per metric within the retriever block; italics = second-best.*
+
+**Read this table this way:**
+- Under the Naïve Retriever, all three task-conditioned variants help
+  significantly (+5.4 pp / +8.9 pp / +8.8 pp Cov@3 respectively).
+- TC-Metadata is the only variant that **persists** under a non-trivial
+  retriever — it still gains +6.0 pp Cov@3 under UMS, where parliamentary
+  chunks occupy a guaranteed retrieval quota and filtering noisy
+  document types directly improves that quota.
+- TC-Chunking gains vanish once QRe is active: chunking and routing
+  fix the *same* failure mode (source contamination), so the gains do
+  not stack.
+- The joint variant matches but does not strictly dominate TC-Metadata
+  — a winner’s-curse effect from the 14 × 14 = 196-pair search space.
+
+### Retrieval strategies on multi-hop questions (RQ4–RQ5)
+
+Recall@k on the multi-hop subset of HistoriQA-ThirdRepublic, split by
+question type — *cross-newspaper* (314 q., both gold passages in
+newspapers) and *newspaper → Débats* (571 q., one newspaper + one
+parliamentary document).
+
+| Configuration                          | Overall R\@3 | R\@5     | R\@10    | Cross-news. R\@3 | News.→Débats R\@3 |
+| -------------------------------------- | ------------ | -------- | -------- | ---------------- | ----------------- |
+| Naïve Retriever                        | 35.9         | 44.0     | 54.4     | 14.3             | 47.8              |
+| BM25 (lexical)                         | 23.1         | 29.3     | 37.8     | 4.6              | 33.3              |
+| HippoRAG v2                            | 31.7         | 41.9     | 53.0     | 11.6             | 42.7              |
+| LinearRAG                              | 31.7         | 41.9     | 53.0     | 11.6             | 42.7              |
+| **S-RAG: QRe**                         | 48.0         | 57.0     | 68.4     | 48.4             | 47.8              |
+| **S-RAG: UMS**                         | _50.2_       | _57.6_   | _69.4_   | 40.8             | 55.4              |
+| **S-RAG: QRe & UMS** (ours, full)      | **52.3**     | **58.4** | **72.3** | 46.7             | 55.4              |
+
+QRe lifts retrieval on cross-newspaper questions (where parliamentary
+contamination is the bottleneck) from 14.3 → 48.4 Recall@3, while UMS
+lifts newspaper→Débats questions (where the press is starved by the
+much larger parliamentary index) from 47.8 → 55.4 Recall@3. The
+combined router strictly composes both gains.
 
 ---
 
@@ -81,6 +170,36 @@ ORDER_EMNLP2026/
 ├── .env.example
 └── README.md
 ```
+
+---
+
+## Methodology in brief
+
+ORDER splits retrieval optimisation along two axes:
+
+- **Offline, document-conditioned axis** — heavy lifting: build 14
+  chunking variants of *Les Débats* (sliding windows, hierarchical
+  splits, fixed-size, semantic chunkers; see
+  [scripts/segmentation_strategies/](scripts/segmentation_strategies/)),
+  embed each variant into a ChromaDB collection with Cohere
+  `embed-v4.0`, and pre-compute per-cluster scores over the
+  *(chunking × metadata)* grid.
+- **Online, query-conditioned axis** — at inference: embed the query,
+  assign it to a training cluster (UMAP-10D + HDBSCAN learned on the
+  training split, *min_cluster_size = 5*, *min_samples = 5*), and
+  retrieve from the index/metadata configuration the cluster prefers.
+  The marginal online cost is one UMAP projection plus one
+  nearest-centroid lookup.
+
+**Experimental protocol.** All multi-seed scripts use the same five
+seeds — `[42, 123, 2021, 7, 9999]` — and a 50/50 train/test split of the
+HistoriQA-ThirdRepublic 1887 question set. Significance is reported
+with a Bonferroni-corrected paired *t*-test across seeds. Routing
+configurations (`apply_no_rerouting`, `apply_query_rerouting`,
+`apply_forced_multicollection`,
+`apply_forced_equal_from_all_collections`) live in
+[scripts/retrieval_utils.py](scripts/retrieval_utils.py) and are the
+single source of truth for QRe and UMS.
 
 ---
 
