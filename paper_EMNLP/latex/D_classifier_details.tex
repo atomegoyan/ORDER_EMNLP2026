@@ -1,0 +1,90 @@
+% ============================================================
+%  Appendix D — Query-Routing Classifier Details
+%  Holds tables displaced from §4.1.1:
+%    - tab:clf-report  : per-class precision/recall/F1 on the 3-class task
+%    - tab:confusion   : 3-class confusion matrix
+%
+%  Required packages already in the main preamble:
+%    \usepackage{booktabs}
+%    \usepackage{makecell}
+% ============================================================
+
+The query-routing classifier is a multinomial logistic regression over Cohere
+\texttt{embed-v4.0} query embeddings, trained on 500 multi-hop questions with
+labelled source-pair annotations and evaluated on a held-out set of 177
+questions.
+The body of the paper (§\ref{sec:classifier}) reports the headline numbers:
+80.2\% raw 3-class accuracy and 99.4\% binary routing accuracy.
+This appendix provides the supporting per-class metrics, the full 3-class
+confusion matrix, and the collapsed binary confusion matrix used at routing
+time.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{l cc}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Predicted}} \\
+\cmidrule(lr){2-3}
+\textbf{True}  & \textit{with Les Débats} & \textit{newspapers only} \\
+\midrule
+\textit{with Les Débats}  & \textbf{114} &   0 \\
+\textit{newspapers only}  &    1 & \textbf{62} \\
+\bottomrule
+\end{tabular}
+\caption{Binary confusion matrix on the held-out test set ($n{=}177$),
+obtained by merging the two \textit{Les Débats} classes.
+The classifier almost perfectly separates questions requiring
+parliamentary transcripts from purely newspaper questions
+(99.4\% binary accuracy).}
+\label{tab:confusion-binary}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Support} \\
+\midrule
+\textit{L'Intransigeant} $+$ \textit{Les Débats}  & 0.72 & 0.83 & 0.77 & 70 \\
+\textit{Le Gaulois} $+$ \textit{L'Intransigeant}  & 1.00 & 0.98 & 0.99 & 63 \\
+\textit{Le Gaulois} $+$ \textit{Les Débats}        & 0.65 & 0.50 & 0.56 & 44 \\
+\midrule
+\textbf{Weighted avg}                              & 0.80 & 0.80 & 0.80 & 177 \\
+\bottomrule
+\end{tabular}
+\caption{Per-class precision, recall, and F1 of the logistic regression
+classifier on the held-out test set (3-class task).
+The two classes involving \textit{Les Débats} (\texttt{I+D}, \texttt{G+D})
+account for nearly all classification errors; the newspaper-only class
+\texttt{G+I} is almost perfectly identified.}
+\label{tab:clf-report}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l ccc}
+\toprule
+ & \multicolumn{3}{c}{\textbf{Predicted}} \\
+\cmidrule(lr){2-4}
+\textbf{True}
+  & \makecell{\textit{Intr.}\\$+$\,\textit{Déb.}}
+  & \makecell{\textit{Gau.}\\$+$\,\textit{Déb.}}
+  & \makecell{\textit{Gau.}\\$+$\,\textit{Intr.}} \\
+\midrule
+\textit{L'Intransigeant} $+$ \textit{Les Débats} & \textbf{58} &  12 &   0 \\
+\textit{Le Gaulois} $+$ \textit{Les Débats}      &  22 & \textbf{22} &   0 \\
+\textit{Le Gaulois} $+$ \textit{L'Intransigeant} &   1 &   0 & \textbf{62} \\
+\bottomrule
+\end{tabular}
+\caption{3-class confusion matrix on the held-out test set.
+Errors concentrate in the top-left $2{\times}2$ block (\textit{Les Débats}
+classes confused with each other); only one newspaper-only question is
+misrouted to a \textit{Les Débats} class.
+This error structure motivates the binary collapse used at routing time
+(Table~\ref{tab:confusion-binary}).}
+\label{tab:confusion}
+\end{table}

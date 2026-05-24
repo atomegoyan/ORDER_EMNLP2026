@@ -1,0 +1,233 @@
+\subsection{Chunking Strategy Families}
+\label{sec:appendix-chunking-families}
+
+This appendix provides full implementation details for the fourteen chunking
+strategies introduced in Section~\ref{sec:indexing-methodology}
+(Task-Conditioned Indexing) and summarised in Section~\ref{sec:chunking-families}.
+The strategies are evaluated in Section~\ref{sec:indexing-results}.
+Table~\ref{tab:chunking-families} in the main paper summarises the four groups at
+a glance; Table~\ref{tab:chunking-strategies} below gives the precise boundary
+detection rules, chunk counts, and mean chunk lengths for each strategy.
+
+All strategies re-segment only \textit{Les Débats}; the two newspaper collections
+(\textit{Le Gaulois}, \textit{L'Intransigeant}) retain their original
+article-level segmentation throughout every experiment.
+The strategy \texttt{10000\_hierarchical} is the production-system default and
+serves as the retrieval baseline in all comparisons
+(Section~\ref{sec:indexing-results}).
+
+
+
+\onecolumn
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.35}
+\setlength{\LTleft}{\fill}
+\setlength{\LTright}{\fill}
+\begin{longtable}{%
+  >{\raggedright\arraybackslash}p{2.3cm}   % ID
+  c                                         % Group
+  >{\raggedright\arraybackslash}p{2.5cm}   % Boundary signal
+  >{\raggedright\arraybackslash}p{3.5cm}   % Chunking rule / algorithm
+  >{\centering\arraybackslash}p{1.0cm}     % n chunks
+  >{\centering\arraybackslash}p{1.7cm}     % Mean ± std
+  >{\raggedright\arraybackslash}p{3.3cm}   % Notes
+}
+% ── First-page caption + header ─────────────────────────────────────────────
+\caption{%
+  \textbf{Chunking strategies evaluated for \textit{Les Débats} parliamentary transcripts (1887).}
+  Fourteen strategies are compared across three dimensions: boundary signal,
+  semantic granularity, and whether the \emph{noVotes} preprocessing
+  (removal of deputy name-lists from roll-call votes) is applied.
+  Only \textit{Les Débats} is re-chunked; newspaper collections remain
+  under their original segmentation.
+  \textsuperscript{\dag}~Strategy used as retrieval baseline in all comparisons.
+  \textsuperscript{\ddag}~Production-system default at project start.
+} \label{tab:chunking-strategies} \\
+\toprule
+\textbf{Strategy ID} &
+\textbf{Group} &
+\textbf{Boundary signal} &
+\textbf{Chunking rule / algorithm} &
+\textbf{$n$ chunks} &
+\textbf{Mean ($\pm$~std)} &
+\textbf{Notes \& implementation} \\
+\midrule
+\endfirsthead
+% ── Continuation header ─────────────────────────────────────────────────────
+\multicolumn{7}{l}{\footnotesize\textit{Table~\ref{tab:chunking-strategies} continued from previous page}} \\
+\toprule
+\textbf{Strategy ID} &
+\textbf{Group} &
+\textbf{Boundary signal} &
+\textbf{Chunking rule / algorithm} &
+\textbf{$n$ chunks} &
+\textbf{Mean ($\pm$~std)} &
+\textbf{Notes \& implementation} \\
+\midrule
+\endhead
+% ── Intermediate-page footer ────────────────────────────────────────────────
+\midrule
+\multicolumn{7}{r}{\footnotesize\textit{Continued on next page}} \\
+\endfoot
+% ── Last-page footer (notes) ─────────────────────────────────────────────────
+\bottomrule
+\multicolumn{7}{p{\linewidth}}{%
+  \footnotesize
+  \textbf{Notes.}
+  \textit{$n$ chunks}: total indexed segments in the 1887 corpus.
+  \textit{Mean ($\pm$~std)}: mean and standard deviation of word count per chunk.
+  All strategies operate on pre-split \textit{section} files
+  stored in \texttt{data/\allowbreak corpus\_1887\allowbreak\_splitted\allowbreak\_section/}.
+  Newspaper collections retain their original article-level segmentation.
+  Retrieval embeddings: Cohere \texttt{embed-\allowbreak multilingual-\allowbreak v3.0}.
+  Evaluation: coverage recall (LCS-based) at $k{=}3$, \texttt{no\_rerouting} retrieval baseline.
+} \\
+\endlastfoot
+
+%% ── GROUP A: Baseline / fixed-size ─────────────────────────────────────────
+\multicolumn{7}{l}{\textit{\textbf{Group A — Baseline and fixed-size strategies}}} \\[2pt]
+
+\texttt{10000\allowbreak\_hierarchical}\textsuperscript{\dag\ddag}
+  & A & ALL-CAPS section headers (regex on \texttt{[\^{}a-z]\allowbreak\{10,\}})
+  & Two-pass: (1)~split on capitalised section-title lines; (2)~apply \texttt{Recursive\allowbreak Character\allowbreak Text\allowbreak Splitter} with separators \texttt{["\textbackslash nM.",\allowbreak"\textbackslash n\{2,\}",\allowbreak"\textbackslash n"]} at 10,000-char limit
+  & 5{,}103 & $567 \pm 557$ &
+  Pre-existing production collection; serves as the upper-bound context baseline.
+  Sections correspond to \textit{J.O.} daily agenda items. \\
+
+\texttt{baseline\allowbreak\_10k}
+  & A & None (character count only)
+  & \texttt{Recursive\allowbreak Character\allowbreak Text\allowbreak Splitter}; separators: \texttt{[\^{}a-z]\allowbreak\{10,\}\allowbreak\textbackslash n}, \texttt{\textbackslash nM.}, \texttt{\textbackslash n\{2,\}}, \texttt{\textbackslash n}; chunk\_size=10\,000; overlap=200 chars
+  & 5{,}106 & $568 \pm 558$ &
+  Standard LangChain splitter; no structural awareness. Provides a flat-chunking reference at equivalent size to \texttt{10000\_hierarchical}. \\
+
+\texttt{fixed\_500}
+  & A & None (character count only)
+  & \texttt{Recursive\allowbreak Character\allowbreak Text\allowbreak Splitter}; same separators as \texttt{baseline\_10k}; chunk\_size=500; overlap=50 chars
+  & 52{,}199 & $56 \pm 33$ &
+  Finest fixed-size granularity. One chunk $\approx$ 2–4 short speaker utterances.
+  High chunk count; may split mid-sentence. \\
+
+\texttt{fixed\_1000}
+  & A & None (character count only)
+  & \texttt{Recursive\allowbreak Character\allowbreak Text\allowbreak Splitter}; chunk\_size=1\,000; overlap=100 chars
+  & 29{,}258 & $100 \pm 47$ &
+  Medium fixed-size. Approximately one extended speaker turn or two short turns. \\
+
+\texttt{fixed\_2000}
+  & A & None (character count only)
+  & \texttt{Recursive\allowbreak Character\allowbreak Text\allowbreak Splitter}; chunk\_size=2\,000; overlap=200 chars
+  & 15{,}771 & $188 \pm 99$ &
+  Coarser fixed-size. Approximates one amendment-proposal-length exchange. \\
+
+\midrule
+%% ── GROUP B: Speaker-structure-aware ───────────────────────────────────────
+\multicolumn{7}{l}{\textit{\textbf{Group B — Speaker-structure-aware strategies}}} \\[2pt]
+
+\texttt{S2\_atomic}
+  & B & Speaker-turn markers (\texttt{M.\ [Name].})
+  & Regex \texttt{M.\textbackslash s+(\textbackslash w+)\allowbreak\textbackslash .} at line start;
+  one segment per detected speaker turn;
+  first turn absorbs any preamble before the first speaker marker
+  & 13{,}166 & $219 \pm 388$ &
+  Finest structure-aware granularity. Suitable when queries target a single speaker's utterance.
+  OCR noise may cause missed boundaries. \\
+
+\texttt{S3\_window3}
+  & B & Speaker-turn markers (sliding window)
+  & Apply \texttt{S2\_atomic}; then group turns with window $n{=}3$, step $= n - \text{overlap} = 2$;
+  adjacent windows share 1 turn;
+  segments joined with \texttt{\textbackslash n\allowbreak\textbackslash n}
+  & 7{,}979 & $491 \pm 656$ &
+  Captures thesis–antithesis–response exchanges.
+  Overlap=1 ensures continuity at boundaries; best for focused two-deputy debates. \\
+
+\texttt{S4\_president}
+  & B & Presidential interventions (\texttt{M.\ le président})
+  & Regex \texttt{M.\textbackslash s+le\allowbreak\textbackslash s+président} (case-insensitive);
+  each chunk spans from one presidential line to the next;
+  first chunk absorbs preamble
+  & 5{,}844 & $427 \pm 825$ &
+  In \textit{J.O.} format, the president formally opens/closes each interpellation and
+  speaker handoff; this segments at topic-level transitions including
+  formal vote announcements and order of business transitions. \\
+
+\midrule
+%% ── GROUP C: Procedural-structure-aware ────────────────────────────────────
+\multicolumn{7}{l}{\textit{\textbf{Group C — Procedural-boundary strategies}}} \\[2pt]
+
+\texttt{S8\_vote}
+  & C & Budget-chapter vote markers
+  & Regex on vote-resolution patterns:
+  \texttt{(Adopt\'{e}.|Rejet\'{e}.)} and verbose form
+  \texttt{(mis aux voix et adopt\'{e})};
+  each chunk spans from previous vote end to current vote end,
+  thereby including the full chapter discussion + closing vote
+  & 4{,}656 & $412 \pm 934$ &
+  Tailored to Third Republic \textit{J.O.} budget sessions where
+  chapters are voted on sequentially in rapid succession.
+  Trailing text after the last vote is kept as a separate segment. \\
+
+\texttt{S10\allowbreak\_amendment}
+  & C & Amendment lifecycle markers
+  & Two regex patterns: (1)~amendment start: \texttt{amendement de M}, \texttt{Il y a \ldots\ amendement(s)};
+  (2)~amendment end: \texttt{La Chambre a adopt\'{e}}, \texttt{est adopt\'{e}},
+  parenthetical \texttt{(adopt\'{e}|\allowbreak rejet\'{e})};
+  each chunk covers one complete amendment cycle
+  & 4{,}461 & $419 \pm 952$ &
+  Captures the full arc of a legislative amendment: proposer's argument,
+  opposing response, minister's defence, closing vote.
+  Falls back to \texttt{S8\_vote} when no markers are found. \\
+
+\midrule
+%% ── GROUP D: Topic/agenda-aware ────────────────────────────────────────────
+\multicolumn{7}{l}{\textit{\textbf{Group D — Topic and hybrid strategies}}} \\[2pt]
+
+\texttt{S9\_topic}
+  & D & Agenda-item / topic markers
+  & Regex on J.O.\ topic-transition phrases:
+  \textit{``L'ordre du jour appelle\ldots''},
+  \textit{``La discussion est ouverte\ldots''},
+  \texttt{SUITE DE LA DISCUSSION},
+  \texttt{D\'{E}P\^{O}T D'UN PROJET DE LOI},
+  \textit{``Je mets aux voix\ldots''};
+  falls back to \texttt{S4\_president} when no topic markers found
+  & 4{,}702 & $461 \pm 938$ &
+  Coarser than \texttt{S4}; only agenda-level transitions used as boundaries.
+  Produces topic-coherent segments spanning an entire order-of-business item. \\
+
+\texttt{S9\_topic\allowbreak\_noVotes}
+  & D & Agenda-item markers + vote-list removal
+  & Same boundary detection as \texttt{S9\_topic};
+  preprocessed by \texttt{strip\allowbreak\_vote\allowbreak\_lists}: deputy name-lists in roll-call blocks
+  (\textit{``ONT VOT\'{E} POUR~: MM.\ \ldots''}) replaced with placeholder
+  \texttt{[liste de vote omise]}
+  & 768 & $491 \pm 1{,}074$ &
+  Best-performing strategy for comparative newspaper-tone questions.
+  Vote name-lists act as retrieval noise for semantic queries. \\
+
+\texttt{S11\_hybrid}
+  & D & Agenda-item markers + speaker-turn windows
+  & Two-pass: (1)~apply \texttt{S9\_topic} to produce topic segments;
+  (2)~for each segment exceeding 3\,000 chars, apply
+  \texttt{S3\_window3} ($n{=}3$, overlap=1);
+  short segments ($<$3\,000 chars) kept intact
+  & 8{,}682 & $469 \pm 646$ &
+  Hierarchical: topic coherence at the outer level, speaker-turn
+  granularity within long topic segments. Intended to balance
+  context breadth and retrieval precision. \\
+
+\texttt{S11\_hybrid\allowbreak\_noVotes}
+  & D & Agenda-item + speaker-turn + vote removal
+  & Identical to \texttt{S11\_hybrid} after applying
+  \texttt{strip\allowbreak\_vote\allowbreak\_lists} preprocessing;
+  vote roll-call name-lists replaced before both splitting passes
+  & 8{,}488 & $446 \pm 652$ &
+  Cleaner variant of \texttt{S11\_hybrid};
+  reduces index noise from vote name-lists without losing the
+  semantic signal of the vote result itself. \\
+
+% (notes moved to \endlastfoot above)
+\end{longtable}
+\twocolumn
+%
+

@@ -1,0 +1,298 @@
+% Use this file for citations not found in the ACL Anthology (contained in "anthology.bib").
+
+
+% Machine Learning
+
+@inproceedings{bm25,
+author = {Robertson, Stephen and Walker, Steve and Jones, Susan and Hancock-Beaulieu, Micheline and Gatford, Mike},
+year = {1994},
+month = {01},
+pages = {0-},
+title = {Okapi at TREC-3.}
+}
+
+@misc{umap,
+      title={UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction}, 
+      author={Leland McInnes and John Healy and James Melville},
+      year={2020},
+      eprint={1802.03426},
+      archivePrefix={arXiv},
+      primaryClass={stat.ML},
+      url={https://arxiv.org/abs/1802.03426}, 
+}
+
+@inproceedings{hdbscan,
+   title={A Hybrid Approach To Hierarchical Density-based Cluster Selection},
+   url={http://dx.doi.org/10.1109/MFI49285.2020.9235263},
+   DOI={10.1109/mfi49285.2020.9235263},
+   booktitle={2020 IEEE International Conference on Multisensor Fusion and Integration for Intelligent Systems (MFI)},
+   publisher={IEEE},
+   author={Malzer, Claudia and Baum, Marcus},
+   year={2020},
+   month=Sept, pages={223–228} }
+
+
+% Adaptive / query-conditioned RAG
+
+@inproceedings{adaptive_rag_2024,
+    title = "{A}daptive-{RAG}: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity",
+    author = "Jeong, Soyeong and Baek, Jinheon and Cho, Sukmin and Hwang, Sung Ju and Park, Jong C.",
+    booktitle = "Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)",
+    year = "2024",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2024.naacl-long.389",
+    doi = "10.18653/v1/2024.naacl-long.389",
+    pages = "7036--7050",
+}
+
+% Multi-hop QA benchmarks
+
+@inproceedings{hotpotqa_2018,
+    title = "{H}otpot{QA}: A Dataset for Diverse, Explainable Multi-hop Question Answering",
+    author = "Yang, Zhilin and Qi, Peng and Zhang, Saizheng and Bengio, Yoshua and Cohen, William and Salakhutdinov, Ruslan and Manning, Christopher D.",
+    booktitle = "Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing",
+    year = "2018",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/D18-1259",
+    doi = "10.18653/v1/D18-1259",
+    pages = "2369--2380",
+}
+
+@article{musique_2022,
+    title = "{M}u{S}i{Q}ue: Multihop Questions via Single-hop Question Composition",
+    author = "Trivedi, Harsh and Balasubramanian, Niranjan and Khot, Tushar and Sabharwal, Ashish",
+    journal = "Transactions of the Association for Computational Linguistics",
+    volume = "10",
+    year = "2022",
+    publisher = "MIT Press",
+    url = "https://aclanthology.org/2022.tacl-1.31",
+    doi = "10.1162/tacl_a_00475",
+    pages = "539--554",
+}
+
+
+
+
+% RAG
+
+
+@article{rag_2020, title={Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}, rights={arXiv.org perpetual, non-exclusive license}, url={https://arxiv.org/abs/2005.11401}, DOI={10.48550/ARXIV.2005.11401}, abstractNote={Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks. However, their ability to access and precisely manipulate knowledge is still limited, and hence on knowledge-intensive tasks, their performance lags behind task-specific architectures. Additionally, providing provenance for their decisions and updating their world knowledge remain open research problems. Pre-trained models with a differentiable access mechanism to explicit non-parametric memory can overcome this issue, but have so far been only investigated for extractive downstream tasks. We explore a general-purpose fine-tuning recipe for retrieval-augmented generation (RAG) -- models which combine pre-trained parametric and non-parametric memory for language generation. We introduce RAG models where the parametric memory is a pre-trained seq2seq model and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever. We compare two RAG formulations, one which conditions on the same retrieved passages across the whole generated sequence, the other can use different passages per token. We fine-tune and evaluate our models on a wide range of knowledge-intensive NLP tasks and set the state-of-the-art on three open domain QA tasks, outperforming parametric seq2seq models and task-specific retrieve-and-extract architectures. For language generation tasks, we find that RAG models generate more specific, diverse and factual language than a state-of-the-art parametric-only seq2seq baseline.}, publisher={arXiv}, author={Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and Petroni, Fabio and Karpukhin, Vladimir and Goyal, Naman and Küttler, Heinrich and Lewis, Mike and Yih, Wen-tau and Rocktäschel, Tim and Riedel, Sebastian and Kiela, Douwe}, year={2020} }
+
+@misc{rag_survey,
+      title={Retrieval-Augmented Generation for Large Language Models: A Survey}, 
+      author={Yunfan Gao and Yun Xiong and Xinyu Gao and Kangxiang Jia and Jinliu Pan and Yuxi Bi and Yi Dai and Jiawei Sun and Meng Wang and Haofen Wang},
+      year={2024},
+      eprint={2312.10997},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2312.10997}, 
+}
+
+@misc{leng_long_2024,
+	title = {Long {Context} {RAG} {Performance} of {LLMs}},
+	url = {https://www.databricks.com/blog/long-context-rag-performance-llms},
+	author = {Leng, Quinn and Portes, Jacob and Havens, Sam and Zaharia, Matei and Carbin, Michael},
+	year = {2024},
+}
+
+
+
+@article{hipporagv2, title={From RAG to Memory: Non-Parametric Continual Learning for Large Language Models}, rights={arXiv.org perpetual, non-exclusive license}, url={https://arxiv.org/abs/2502.14802}, DOI={10.48550/ARXIV.2502.14802}, abstractNote={Our ability to continuously acquire, organize, and leverage knowledge is a key feature of human intelligence that AI systems must approximate to unlock their full potential. Given the challenges in continual learning with large language models (LLMs), retrieval-augmented generation (RAG) has become the dominant way to introduce new information. However, its reliance on vector retrieval hinders its ability to mimic the dynamic and interconnected nature of human long-term memory. Recent RAG approaches augment vector embeddings with various structures like knowledge graphs to address some of these gaps, namely sense-making and associativity. However, their performance on more basic factual memory tasks drops considerably below standard RAG. We address this unintended deterioration and propose HippoRAG 2, a framework that outperforms standard RAG comprehensively on factual, sense-making, and associative memory tasks. HippoRAG 2 builds upon the Personalized PageRank algorithm used in HippoRAG and enhances it with deeper passage integration and more effective online use of an LLM. This combination pushes this RAG system closer to the effectiveness of human long-term memory, achieving a 7% improvement in associative memory tasks over the state-of-the-art embedding model while also exhibiting superior factual knowledge and sense-making memory capabilities. This work paves the way for non-parametric continual learning for LLMs. Code and data are available at https://github.com/OSU-NLP-Group/HippoRAG.}, publisher={arXiv}, author={Gutiérrez, Bernal Jiménez and Shu, Yiheng and Qi, Weijian and Zhou, Sizhe and Su, Yu}, year={2025} }
+
+
+@article{lightrag,
+title={LightRAG: Simple and Fast Retrieval-Augmented Generation},
+author={Zirui Guo and Lianghao Xia and Yanhua Yu and Tu Ao and Chao Huang},
+year={2024},
+eprint={2410.05779},
+archivePrefix={arXiv},
+primaryClass={cs.IR}
+}
+
+
+@article{graphrag_2024, title={From Local to Global: A Graph RAG Approach to Query-Focused Summarization}, rights={Creative Commons Attribution 4.0 International}, url={https://arxiv.org/abs/2404.16130}, DOI={10.48550/ARXIV.2404.16130}, abstractNote={The use of retrieval-augmented generation (RAG) to retrieve relevant information from an external knowledge source enables large language models (LLMs) to answer questions over private and/or previously unseen document collections. However, RAG fails on global questions directed at an entire text corpus, such as “What are the main themes in the dataset?”, since this is inherently a query-focused summarization (QFS) task, rather than an explicit retrieval task. Prior QFS methods, meanwhile, do not scale to the quantities of text indexed by typical RAG systems. To combine the strengths of these contrasting methods, we propose GraphRAG, a graph-based approach to question answering over private text corpora that scales with both the generality of user questions and the quantity of source text. Our approach uses an LLM to build a graph index in two stages: first, to derive an entity knowledge graph from the source documents, then to pregenerate community summaries for all groups of closely related entities. Given a question, each community summary is used to generate a partial response, before all partial responses are again summarized in a final response to the user. For a class of global sensemaking questions over datasets in the 1 million token range, we show that GraphRAG leads to substantial improvements over a conventional RAG baseline for both the comprehensiveness and diversity of generated answers.}, publisher={arXiv}, author={Edge, Darren and Trinh, Ha and Cheng, Newman and Bradley, Joshua and Chao, Alex and Mody, Apurva and Truitt, Steven and Metropolitansky, Dasha and Ness, Robert Osazuwa and Larson, Jonathan}, year={2024} }
+
+
+@article{linearrag_2025,
+  title={LinearRAG: Linear Graph Retrieval Augmented Generation on Large-scale Corpora},
+  author={Zhuang, Luyao and Chen, Shengyuan and Xiao, Yilin and Zhou, Huachi and Zhang, Yujing and Chen, Hao and Zhang, Qinggang and Huang, Xiao},
+  journal={arXiv preprint arXiv:2510.10114},
+  year={2025}
+}
+
+@misc{domainrag,
+      title={DomainRAG: A Chinese Benchmark for Evaluating Domain-specific Retrieval-Augmented Generation}, 
+      author={Shuting Wang and Jiongnan Liu and Shiren Song and Jiehan Cheng and Yuqi Fu and Peidong Guo and Kun Fang and Yutao Zhu and Zhicheng Dou},
+      year={2024},
+      eprint={2406.05654},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2406.05654}, 
+}
+
+@article{Chen_Lin_Han_Sun_2024, title={Benchmarking Large Language Models in Retrieval-Augmented Generation}, volume={38}, url={https://ojs.aaai.org/index.php/AAAI/article/view/29728}, DOI={10.1609/aaai.v38i16.29728}, abstractNote={Retrieval-Augmented Generation (RAG) is a promising approach for mitigating the hallucination of large language models (LLMs). However, existing research lacks rigorous evaluation of the impact of retrieval-augmented generation on different large language models, which make it challenging to identify the potential bottlenecks in the capabilities of RAG for different LLMs. In this paper, we systematically investigate the impact of Retrieval-Augmented Generation on large language models. We analyze the performance of different large language models in 4 fundamental abilities required for RAG, including noise robustness, negative rejection, information integration, and counterfactual robustness. To this end, we establish Retrieval-Augmented Generation Benchmark (RGB), a new corpus for RAG evaluation in both English and Chinese. RGB divides the instances within the benchmark into 4 separate testbeds based on the aforementioned fundamental abilities required to resolve the case. Then we evaluate 6 representative LLMs on RGB to diagnose the challenges of current LLMs when applying RAG. Evaluation reveals that while LLMs exhibit a certain degree of noise robustness, they still struggle significantly in terms of negative rejection, information integration, and dealing with false information. The aforementioned assessment outcomes indicate that there is still a considerable journey ahead to effectively apply RAG to LLMs.}, number={16}, journal={Proceedings of the AAAI Conference on Artificial Intelligence}, author={Chen, Jiawei and Lin, Hongyu and Han, Xianpei and Sun, Le}, year={2024}, month={Mar.}, pages={17754–17762} }
+
+
+% RAG and segmentation
+
+@book{chromadb_chunking_2024, title={Evaluating Chunking Strategies for Retrieval}, url={https://research.trychroma.com/evaluating-chunking}, author={Smith, Bradon and Troynikov, Anton}, year={2024} }
+
+
+@article{hope_2025, title={A New HOPE: Domain-agnostic Automatic Evaluation of Text Chunking}, rights={Creative Commons Attribution 4.0 International}, url={https://arxiv.org/abs/2505.02171}, DOI={10.48550/ARXIV.2505.02171}, abstractNote={Document chunking fundamentally impacts Retrieval-Augmented Generation (RAG) by determining how source materials are segmented before indexing. Despite evidence that Large Language Models (LLMs) are sensitive to the layout and structure of retrieved data, there is currently no framework to analyze the impact of different chunking methods. In this paper, we introduce a novel methodology that defines essential characteristics of the chunking process at three levels: intrinsic passage properties, extrinsic passage properties, and passages-document coherence. We propose HOPE (Holistic Passage Evaluation), a domain-agnostic, automatic evaluation metric that quantifies and aggregates these characteristics. Our empirical evaluations across seven domains demonstrate that the HOPE metric correlates significantly (p &gt; 0.13) with various RAG performance indicators, revealing contrasts between the importance of extrinsic and intrinsic properties of passages. Semantic independence between passages proves essential for system performance with a performance gain of up to 56.2% in factual correctness and 21.1% in answer correctness. On the contrary, traditional assumptions about maintaining concept unity within passages show minimal impact. These findings provide actionable insights for optimizing chunking strategies, thus improving RAG system design to produce more factually correct responses.}, author={Brådland, Henrik and Goodwin, Morten and Andersen, Per-Arne and Nossum, Alexander S. and Gupta, Aditya}, year={2025} }
+
+@misc{reconstructingcontextevaluatingadvanced,
+      title={Reconstructing Context: Evaluating Advanced Chunking Strategies for Retrieval-Augmented Generation}, 
+      author={Carlo Merola and Jaspinder Singh},
+      year={2025},
+      eprint={2504.19754},
+      archivePrefix={arXiv},
+      primaryClass={cs.IR},
+      url={https://arxiv.org/abs/2504.19754}, 
+}
+
+@misc{mocmixturestextchunking,
+      title={MoC: Mixtures of Text Chunking Learners for Retrieval-Augmented Generation System}, 
+      author={Jihao Zhao and Zhiyuan Ji and Zhaoxin Fan and Hanyu Wang and Simin Niu and Bo Tang and Feiyu Xiong and Zhiyu Li},
+      year={2025},
+      eprint={2503.09600},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2503.09600}, 
+}
+
+@inproceedings{adaptive_chunking,
+    title={Adaptive Chunking: Optimizing Chunking-Method Selection for RAG},
+    author={de Moura Junior, Paulo Roberto and Lelong, Jean and Blangero, Annabelle},
+    booktitle={Proceedings of the 15th Language Resources and Evaluation Conference (LREC 2026)},
+    year={2026},
+    url={https://arxiv.org/abs/2603.25333},
+}
+
+
+
+
+
+
+% RAG and history
+
+@article{Mudet_Bakkali_2025, title={Hybrid Retrieval-Augmented Generation for Robust Multilingual Document Question Answering}, rights={arXiv.org perpetual, non-exclusive license}, url={https://arxiv.org/abs/2512.12694}, DOI={10.48550/ARXIV.2512.12694}, abstractNote={Large-scale digitization initiatives have unlocked massive collections of historical newspapers, yet effective computational access remains hindered by OCR corruption, multilingual orthographic variation, and temporal language drift. We develop and evaluate a multilingual Retrieval-Augmented Generation pipeline specifically designed for question answering on noisy historical documents. Our approach integrates: (i) semantic query expansion and multi-query fusion using Reciprocal Rank Fusion to improve retrieval robustness against vocabulary mismatch; (ii) a carefully engineered generation prompt that enforces strict grounding in retrieved evidence and explicit abstention when evidence is insufficient; and (iii) a modular architecture enabling systematic component evaluation. We conduct comprehensive ablation studies on Named Entity Recognition and embedding model selection, demonstrating the importance of syntactic coherence in entity extraction and balanced performance-efficiency trade-offs in dense retrieval. Our end-to-end evaluation framework shows that the pipeline generates faithful answers for well-supported queries while correctly abstaining from unanswerable questions. The hybrid retrieval strategy improves recall stability, particularly benefiting from RRF’s ability to smooth performance variance across query formulations. We release our code and configurations at https://anonymous.4open.science/r/RAGs-C5AE/, providing a reproducible foundation for robust historical document question answering.}, publisher={arXiv}, author={Mudet, Anthony and Bakkali, Souhail}, year={2025} }
+
+%@proceedings{historiqa,
+  TITLE = {{HistoriQA-ThirdRepublic: Multi-Hop Question Answering Corpus for Historical Research, Parliamentary Debates from the French Third Republic (1870-1940)}},
+  AUTHOR = {Pellet, Aur{\'e}lien and Puren, Marie and Perez, Julien},
+  URL = {https://hal.science/hal-05438255},
+  BOOKTITLE = {{LREC 2026: Language Resources and Evaluation Conference}},
+  ADDRESS = {Palma de Mallorca, Spain},
+  ORGANIZATION = {{ELRA Language Resources Association}},
+  YEAR = {2026},
+  KEYWORDS = {etc.) ; Annotation ; Corpus (Creation ; Evaluation Methodologies ; Information Retrieval ; Information Extraction ; Language Representation Models ; Question Answering ; Digital Humanities},
+  PDF = {https://hal.science/hal-05438255v1/file/pellet_puren_perez_multihop2025.pdf},
+  HAL_ID = {hal-05438255},
+  HAL_VERSION = {v1},
+}
+
+
+@inproceedings{historiqa-pellet,
+    title={AHistoriQA-ThirdRepublic: Multi-Hop Question Answering Corpus for Historical Research, Parliamentary Debates from the French Third Republic (1870-1940)},
+    author={Pellet, Aur{\'e}lien and Puren, Marie and Perez, Julien},
+    booktitle={Proceedings of the 15th Language Resources and Evaluation Conference (LREC 2026)},
+    year={2026},
+    url={https://hal.science/hal-05438255v1/file/pellet_puren_perez_multihop2025.pdf},
+}
+@proceedings{pellet:hal-05438255,
+  TITLE = {{HistoriQA-ThirdRepublic: Multi-Hop Question Answering Corpus for Historical Research, Parliamentary Debates from the French Third Republic (1870-1940)}},
+  AUTHOR = {Pellet, Aur{\'e}lien and Puren, Marie and Perez, Julien},
+  URL = {https://hal.science/hal-05438255},
+  BOOKTITLE = {{LREC 2026: Language Resources and Evaluation Conference}},
+  ADDRESS = {Palma de Mallorca, Spain},
+  ORGANIZATION = {{ELRA Language Resources Association}},
+  YEAR = {2026},
+  KEYWORDS = {etc.) ; Annotation ; Corpus (Creation ; Evaluation Methodologies ; Information Retrieval ; Information Extraction ; Language Representation Models ; Question Answering ; Digital Humanities},
+  PDF = {https://hal.science/hal-05438255v1/file/pellet_puren_perez_multihop2025.pdf},
+  HAL_ID = {hal-05438255},
+  HAL_VERSION = {v1},
+}
+
+@inproceedings{historiqa,
+  TITLE = {{HistoriQA-ThirdRepublic: Multi-Hop Question Answering Corpus for Historical Research, Parliamentary Debates from the French Third Republic (1870-1940)}},
+  AUTHOR = {Pellet, Aur{\'e}lien and Puren, Marie and Perez, Julien},
+  URL = {https://hal.science/hal-05438255},
+  BOOKTITLE = {{LREC 2026: Language Resources and Evaluation Conference}},
+  ADDRESS = {Palma de Mallorca, Spain},
+  ORGANIZATION = {{ELRA Language Resources Association}},
+  YEAR = {2026},
+  KEYWORDS = {etc.) ; Annotation ; Corpus (Creation ; Evaluation Methodologies ; Information Retrieval ; Information Extraction ; Language Representation Models ; Question Answering ; Digital Humanities},
+  PDF = {https://hal.science/hal-05438255v1/file/pellet_puren_perez_multihop2025.pdf},
+  HAL_ID = {hal-05438255},
+  HAL_VERSION = {v1},
+}
+
+
+@book{Aho:72,
+    author  = {Alfred V. Aho and Jeffrey D. Ullman},
+    title   = {The Theory of Parsing, Translation and Compiling},
+    year    = "1972",
+    volume  = "1",
+    publisher = {Prentice-Hall},
+    address = {Englewood Cliffs, NJ}
+}
+
+@book{APA:83,
+    author  = {{American Psychological Association}},
+    title   = {Publications Manual},
+    year    = "1983",
+    publisher = {American Psychological Association},
+    address = {Washington, DC}
+}
+
+@article{Chandra:81,
+	author = {Ashok K. Chandra and Dexter C. Kozen and Larry J. Stockmeyer},
+	year = "1981",
+	title = {Alternation},
+	journal = {Journal of the Association for Computing Machinery},
+	volume = "28",
+	number = "1",
+	pages = "114--133",
+	doi = "10.1145/322234.322243",
+}
+
+@inproceedings{andrew2007scalable,
+  title={Scalable training of {L1}-regularized log-linear models},
+  author={Andrew, Galen and Gao, Jianfeng},
+  booktitle={Proceedings of the 24th International Conference on Machine Learning},
+  pages={33--40},
+  year={2007},
+}
+
+@book{Gusfield:97,
+    author  = {Dan Gusfield},
+    title   = {Algorithms on Strings, Trees and Sequences},
+    year    = "1997",
+    publisher = {Cambridge University Press},
+    address = {Cambridge, UK}
+}
+
+@article{rasooli-tetrault-2015,
+    author    = {Mohammad Sadegh Rasooli and Joel R. Tetreault},
+    title     = {Yara Parser: {A} Fast and Accurate Dependency Parser},
+    journal   = {Computing Research Repository},
+    volume    = {arXiv:1503.06733},
+    year      = {2015},
+    url       = {http://arxiv.org/abs/1503.06733},
+    note    = {version 2}
+}
+
+@article{Ando2005,
+	Acmid = {1194905},
+	Author = {Ando, Rie Kubota and Zhang, Tong},
+	Issn = {1532-4435},
+	Issue_Date = {12/1/2005},
+	Journal = {Journal of Machine Learning Research},
+	Month = dec,
+	Numpages = {37},
+	Pages = {1817--1853},
+	Publisher = {JMLR.org},
+	Title = {A Framework for Learning Predictive Structures from Multiple Tasks and Unlabeled Data},
+	Volume = {6},
+	Year = {2005}
+}

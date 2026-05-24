@@ -1,0 +1,423 @@
+% ============================================================
+%  Retrieval Methodology — \input{methodology} in main paper
+%
+%  Required packages in preamble:
+%    \usepackage{algorithm}
+%    \usepackage{algpseudocode}   % from the algorithmicx bundle
+%    \usepackage{amsmath}
+%    \usepackage{booktabs}
+%    \usepackage{multirow}
+%    \usepackage{makecell}        % for \makecell in confusion matrix headers
+%    \usepackage{pifont}          % for \ding{51} / \ding{55}
+% ============================================================
+
+\newcommand{\cmark}{\ding{51}}%  checkmark
+\newcommand{\xmark}{\ding{55}}%  crossmark
+
+\section{Methodology}
+\label{sec:methodology}
+
+
+We describe the implementation of our three contributions: a structured RAG system integrating query classification to optimize source identification, task-conditioned indexing to determine the most appropriate chunking strategy for a given question, and task-conditioned information extraction to identify the optimal set of metadata to maximize retrieval performance.
+
+
+%------------------------------------------------------------
+\subsection{Structured Retriever}
+\label{sec:two-phase}
+
+We evaluate four retrieval strategies for multi-source, multi-hop question answering
+over three heterogeneous historical corpora: \textit{Le Gaulois} (newspaper),
+\textit{L'Intransigeant} (newspaper), and \textit{Les Débats} (parliamentary
+transcripts from the French Chambre des Députés), each indexed as an independent
+dense vector store using Cohere \texttt{embed-v4.0} embeddings.
+
+For each question $q$, we embed $q$ into a dense vector $\mathbf{v}_q$, run a
+supervised query-routing classifier to predict the most relevant source combination
+$\hat{y}_q$, and then retrieve a fixed candidate pool $\mathcal{P}_q$ of $N{=}15$
+documents from \emph{every} collection unconditionally.
+Each document $d \in \mathcal{P}_q$ is annotated with $\textsc{source}(d)$, the
+collection it was retrieved from.
+Both the pool and the predicted class are written to disk once and reused across all
+strategy comparisons.
+
+
+
+
+%------------------------------------------------------------
+\subsubsection{Query Routing via Supervised Classification}
+\label{sec:classifier}
+
+\begin{table*}[htbp]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Support} \\
+\midrule
+\textit{L'Intransigeant} $+$ \textit{Les Débats}  & 0.72 & 0.83 & 0.77 & 70 \\
+\textit{Le Gaulois} $+$ \textit{L'Intransigeant}  & 1.00 & 0.98 & 0.99 & 63 \\
+\textit{Le Gaulois} $+$ \textit{Les Débats}        & 0.65 & 0.50 & 0.56 & 44 \\
+\midrule
+\textbf{Weighted avg}                              & 0.80 & 0.80 & 0.80 & 177 \\
+\bottomrule
+\end{tabular}
+\caption{Logistic regression classifier performance on the held-out test set (3-class).}
+\label{tab:clf-report}
+\end{table*}
+
+We decide to apply a machine learning classifier to identify based on a question which king of collection/document is necessary to answer it.
+The classifier $f_\theta$ is a logistic regression model trained on labeled
+source-pair annotations from the multi-hop question set, using Cohere
+\texttt{embed-v4.0} embeddings as features. For the training we use a separate sample of 500 questions. The classifier maps a query embedding $\mathbf{v}_q$ to one of three source-pair classes:
+\textit{Le Gaulois} $+$ \textit{L'Intransigeant},
+\textit{L'Intransigeant} $+$ \textit{Les Débats}, and
+\textit{Le Gaulois} $+$ \textit{Les Débats}.
+The model achieves an overall accuracy of \textbf{80.2\%} on the held-out set
+($n{=}177$), with per-class results reported in Table~\ref{tab:clf-report}.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l ccc}
+\toprule
+ & \multicolumn{3}{c}{\textbf{Predicted}} \\
+\cmidrule(lr){2-4}
+\textbf{True}
+  & \makecell{\textit{Intr.}\\$+$\,\textit{Déb.}}
+  & \makecell{\textit{Gau.}\\$+$\,\textit{Déb.}}
+  & \makecell{\textit{Gau.}\\$+$\,\textit{Intr.}} \\
+\midrule
+\textit{L'Intransigeant} $+$ \textit{Les Débats} & \textbf{58} &  12 &   0 \\
+\textit{Le Gaulois} $+$ \textit{Les Débats}      &  22 & \textbf{22} &   0 \\
+\textit{Le Gaulois} $+$ \textit{L'Intransigeant} &   1 &   0 & \textbf{62} \\
+\bottomrule
+\end{tabular}
+\caption{3-class confusion matrix. All errors are internal to the \textit{Les Débats} block
+(top-left $2{\times}2$); the newspaper-only class is almost perfectly separated.}
+\label{tab:confusion}
+\end{table}
+
+
+
+
+\paragraph{Motivation for binary routing.}
+Inspection of the confusion matrix reveals a characteristic error structure:
+the two classes that both involve \textit{Les Débats} are systematically confused
+with each other (12 and 22 cross-errors respectively), while neither Débats class
+is ever misclassified as the newspaper-only class
+(\textit{Le Gaulois} $+$ \textit{L'Intransigeant}), and vice versa
+(only 1 newspaper-only question is misrouted to a Débats class).
+Table~\ref{tab:confusion} illustrates this pattern with rows and columns ordered
+to place the two Débats classes adjacently.
+
+
+
+This structure shows that the classifier effectively solves a binary problem:
+\emph{does this question require \textit{Les Débats}?}
+The internal ambiguity between which newspaper is paired with \textit{Les Débats}
+is irrelevant for routing, since both classes map to the same set of active
+collections (all three corpora).
+Collapsing the 3-class output to a binary routing decision yields a near-perfect binary accuracy of 99.4\% (176/177 correct), as shown in
+Table~\ref{tab:confusion-binary}.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{l cc}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Predicted}} \\
+\cmidrule(lr){2-3}
+\textbf{True}  & \textit{with Les Débats} & \textit{newspapers only} \\
+\midrule
+\textit{with Les Débats}  & \textbf{114} &   0 \\
+\textit{newspapers only}  &    1 & \textbf{62} \\
+\bottomrule
+\end{tabular}
+\caption{Binary confusion matrix obtained by merging the two \textit{Les Débats}
+classes. The classifier almost perfectly separates questions requiring
+parliamentary transcripts from purely newspaper questions (99.4\% binary accuracy).}
+\label{tab:confusion-binary}
+\end{table}
+
+A routing map $\phi$ converts each predicted class to a set of active collections
+$\mathcal{A}_q$ accordingly, using shorthands $\mathcal{G}$, $\mathcal{I}$,
+$\mathcal{D}$ for \textit{Le Gaulois}, \textit{L'Intransigeant}, and
+\textit{Les Débats} respectively:
+%
+\begin{equation}
+  \label{eq:routing}
+  \phi(\hat{y}_q) =
+  \begin{cases}
+    \{\mathcal{G},\, \mathcal{I}\}
+      & \text{if } \hat{y}_q = \mathcal{G} + \mathcal{I} \\[4pt]
+    \{\mathcal{G},\, \mathcal{I},\, \mathcal{D}\}
+      & \text{otherwise}
+  \end{cases}
+\end{equation}
+%
+The classifier's effective decision is therefore binary: does the query require
+the parliamentary corpus \textit{Les Débats}? Purely newspaper comparative
+questions are routed to the two newspaper collections only; questions crossing
+newspaper coverage and parliamentary proceedings are routed to all three.
+
+%------------------------------------------------------------
+\subsubsection{Retrieval Strategies}
+\label{sec:retrieval-strategies}
+
+All four strategies operate on the cached pool $\mathcal{P}_q$ produced by
+Phase~1 and return a ranked list of exactly $k$ documents.
+They differ only along two orthogonal axes (Table~\ref{tab:strategies}):
+(i) whether the pool is pre-filtered to a set of \emph{active} collections
+$\mathcal{A}_q$ predicted by the classifier, and (ii) whether an equal
+per-source quota is enforced over $\mathcal{A}_q$.
+We denote by $\textsc{topk}(\mathcal{S}, k)$ the $k$ documents of a set
+$\mathcal{S}$ with smallest cosine distance to $\mathbf{v}_q$.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Strategy} & \textbf{Query Routing} & \textbf{Uniform Quota} \\
+\midrule
+Naive Retriever           & \xmark & \xmark \\
+QRe                       & \cmark & \xmark \\
+UMS-Retriever             & \xmark & \cmark \\
+QRe \& UMS-Retriever      & \cmark & \cmark \\
+\bottomrule
+\end{tabular}
+\caption{The four retrieval strategies along two orthogonal axes.
+\textit{Query Routing}: the pool is restricted to classifier-predicted active
+collections $\mathcal{A}_q$.
+\textit{Uniform Quota}: budget $k$ is split equally across active collections.}
+\label{tab:strategies}
+\end{table}
+
+\paragraph{Naive Retriever.}
+The default RAG baseline: $L = \textsc{topk}(\mathcal{P}_q, k)$, with no
+routing and no quota.
+Documents are ranked purely by cosine distance, regardless of source.
+
+\paragraph{Query Rerouting (QRe).}
+Filter the pool to the active collections $\mathcal{A}_q = \phi(\hat{y}_q)$
+predicted by the classifier, then rank by distance:
+$L = \textsc{topk}\bigl(\{d \in \mathcal{P}_q : \textsc{source}(d) \in \mathcal{A}_q\},\, k\bigr)$.
+Collections deemed irrelevant for $q$ are discarded before ranking.
+
+\paragraph{Uniform Multi-Source Retriever (UMS).}
+Multi-hop questions require evidence from \emph{multiple} sources by
+construction; pure distance ranking can saturate the top-$k$ with documents
+from a single high-scoring collection, starving the others of representation.
+UMS enforces an equal per-source quota over the full collection set
+$\mathcal{C}$: each collection $c$ receives
+\begin{equation}
+\label{eq:quota}
+q_c \;=\; \lfloor k / |\mathcal{C}| \rfloor
+       \;+\; \mathbf{1}\!\bigl[\textsc{rank}(c) \leq k \bmod |\mathcal{C}|\bigr],
+\end{equation}
+where $\textsc{rank}(c)$ orders collections by their closest document's
+distance, so the $k \bmod |\mathcal{C}|$ extra slots go to the globally
+most-relevant collections.
+The final list is the union of the top-$q_c$ documents from each $c$,
+re-sorted globally by distance.
+
+\paragraph{QRe \& UMS-Retriever.}
+The two mechanisms compose by applying the UMS quota
+(Eq.~\ref{eq:quota}) over $\mathcal{A}_q$ rather than $\mathcal{C}$:
+the classifier first filters out irrelevant collections, then the remaining
+budget is split equally across the active ones.
+
+
+
+
+%------------------------------------------------------------
+\subsection{Task-Conditioned Indexing}
+\label{sec:indexing-methodology}
+
+Standard RAG pipelines apply a single document segmentation strategy globally —
+an \emph{one-size-fits-all} assumption that ignores the structural diversity of
+historical questions.
+A comparative budget question and a biographical bridge-entity question require
+evidence at different granularities.
+We investigate a \textbf{task-conditioned indexing} framework that selects the
+segmentation best suited to each question category, without any per-query
+re-indexing overhead.
+Re-chunking is restricted to \textit{Les Débats}, the most structurally complex
+collection; newspaper collections retain article-level segmentation throughout.
+
+%------------------------------------------------------------
+\subsubsection{Chunking Strategy Families}
+\label{sec:chunking-families}
+
+We define fourteen strategies in four families (Table~\ref{tab:chunking-families}).
+Group~A provides flat baselines, including the production strategy
+\texttt{10000\_hierarchical}, which uses ALL-CAPS section headers as structural
+anchors before applying a recursive character splitter.
+Groups~B and~C exploit \textit{Les Débats}-specific markup: speaker-turn
+delimiters (\texttt{M.~[Name].}) and procedural markers (vote resolutions,
+amendment lifecycle events) respectively.
+Group~D adds agenda-level topic boundaries; \texttt{noVotes} variants strip
+deputy roll-call name-lists, which otherwise introduce retrieval noise for
+semantic queries.
+
+\begin{table}[htbp]
+\centering
+\tiny
+\begin{tabular}{l l p{3.1cm}}
+\toprule
+\textbf{Group} & \textbf{Strategy} & \textbf{Boundary signal} \\
+\midrule
+\multirow{2}{*}{A — Baseline}
+  & \texttt{10000\_hier.}\textsuperscript{†} & Section headers + recursive splitter \\
+  & \texttt{fixed\_\{500,1k,2k,10k\}} & Character windows only \\
+\midrule
+\multirow{3}{*}{B — Speaker}
+  & \texttt{S2\_atomic} & One segment per speaker turn \\
+  & \texttt{S3\_window3} & Sliding 3-turn window \\
+  & \texttt{S4\_president} & Presidential interventions \\
+\midrule
+\multirow{2}{*}{C — Procedural}
+  & \texttt{S8\_vote} & Vote resolution markers \\
+  & \texttt{S10\_amendment} & Amendment lifecycle \\
+\midrule
+\multirow{4}{*}{D — Topic}
+  & \texttt{S9\_topic} & Agenda-item transitions \\
+  & \texttt{S9\_topic\_noVotes} & Agenda + vote-list removal \\
+  & \texttt{S11\_hybrid} & Topic outer / speaker-turn inner \\
+  & \texttt{S11\_hybrid\_noVotes} & Hybrid + vote-list removal \\
+\bottomrule
+\multicolumn{3}{l}{\footnotesize\textsuperscript{†}~Production baseline.}
+\end{tabular}
+\caption{Fourteen chunking strategies evaluated on \textit{Les Débats}
+(1887 corpus), grouped by boundary signal type.
+Only this collection is re-chunked; newspaper collections retain
+article-level segmentation.}
+\label{tab:chunking-families}
+\end{table}
+
+Full implementation details — regex patterns, splitter configurations, and chunk
+statistics for all fourteen strategies can be foud in the code.
+
+%------------------------------------------------------------
+\subsubsection{Evaluation Protocol}
+\label{sec:indexing-eval-protocol}
+
+All strategies are evaluated on Recall@$k$ ($k \in \{3,5,10\}$) using the
+Naive Retriever as a fixed baseline, so that observed differences reflect
+solely the segmentation choice.
+Questions are grouped by two orthogonal dimensions: \emph{question type}
+(MH-BridgeEntity, $n{=}152$; MH-Comparative, $n{=}192$; MH-Generic, $n{=}541$)
+and \emph{source-pair type} (cross-newspaper, 314 questions;
+newspaper $\rightarrow$ \textit{Les Débats}, 571 questions).
+
+\paragraph{Zero-shot inference.}
+The framework is zero-shot in the sense that question-type labels can be predicted
+directly from the query text — or read from dataset metadata — without labelling
+individual queries for the strategy selector.
+At inference time, the predicted type routes the query to the pre-built index
+for the optimal segmentation; no re-indexing is required.
+The marginal online cost is limited to the type-prediction step.
+
+%------------------------------------------------------------
+\subsubsection{Cluster-Based Strategy Assignment at Inference}
+\label{sec:indexing-inference}
+
+The oracle analysis of Section~\ref{sec:indexing-global} shows that per-cluster
+strategy selection yields up to $+$8.2 Coverage points over the global baseline.
+Realising this gain in practice requires a mechanism to assign an unseen query
+to a cluster at inference time and route it to the corresponding pre-built index.
+We implement this with a nearest-centroid classifier trained on a 75/25 question
+split (seed = 42) shared with the strategy-selection step.
+
+\paragraph{Training phase.}
+Training questions are embedded with Cohere \texttt{embed-v4.0} and their
+representations are stored in ChromaDB at indexing time.
+Embeddings are reduced to 10 dimensions with UMAP, then clustered with
+HDBSCAN to obtain semantic question groups.
+For each non-noise cluster $c$, all fourteen segmentation strategies are scored
+by Coverage@3 using the Naive Retriever ($n_{\text{results}}{=}3$, matching the
+evaluation budget); the best-performing strategy $s^*(c)$ is recorded.
+Questions assigned to the noise cluster (HDBSCAN label $-1$) fall back to the
+global baseline \texttt{10000\_hierarchical}.
+The outputs of training are: (i) the fitted UMAP transform, (ii) the set of
+cluster centroids $\{\mu_c\}$ in 10-D UMAP space, and (iii) the strategy map
+$s^*\!: c \mapsto \text{strategy}$.
+
+\paragraph{Inference phase.}
+At query time, the test question $q$ is embedded and projected into the training
+UMAP space.
+The nearest centroid by Euclidean distance determines the cluster assignment
+$\hat{c}_q = \arg\min_{c}\;\|\mathbf{z}_q - \mu_c\|_2$.
+The query is then served from the pre-built index for strategy $s^*(\hat{c}_q)$,
+and retrieval proceeds with the Naive Retriever at budget $k$.
+The marginal online cost is one UMAP projection and one nearest-neighbour lookup
+over $|\{\mu_c\}|$ centroids — negligible compared to embedding.
+Algorithm~\ref{alg:tc-inference} summarises both phases.
+
+\begin{algorithm}[htbp]
+\caption{Task-Conditioned Indexing: Training \& Inference}
+\label{alg:tc-inference}
+\begin{algorithmic}[1]
+\Statex \textbf{Training phase}
+\Require Training questions $\mathcal{Q}_{\text{train}}$ with embeddings,
+         strategy set $\mathcal{S}$, budget $k_0{=}3$
+\Ensure  UMAP transform $T$, centroids $\{\mu_c\}$, strategy map $s^*$
+\State $T,\; Z \leftarrow \textsc{UMAPFit}(\mathcal{Q}_{\text{train}},\; d{=}10)$
+    \Comment{fit reducer; rows of $Z$ are 10-D projections}
+\State $\{\text{label}(q)\} \leftarrow \textsc{HDBSCAN}(Z)$
+    \Comment{cluster assignments; label $-1$ = noise group}
+\For{each cluster $c$}
+    \Comment{all clusters including noise group $-1$}
+    \State $\mathcal{Q}_c \leftarrow \{q \in \mathcal{Q}_{\text{train}} \mid \text{label}(q) = c\}$
+    \State $\mu_c \leftarrow \dfrac{1}{|\mathcal{Q}_c|}\displaystyle\sum_{q \in \mathcal{Q}_c} Z[q]$
+        \Comment{centroid in 10-D UMAP space}
+    \For{each strategy $s \in \mathcal{S}$}
+        \State $\mathcal{R}_s \leftarrow \bigl\{\textsc{NaiveRetrieve}(q,\; s,\; k_0) \mid q \in \mathcal{Q}_c\bigr\}$
+            \Comment{top-$k_0$ from index built with $s$}
+        \State $\text{score}(c, s) \leftarrow \textsc{Coverage@}k_0(\mathcal{R}_s,\; \mathcal{Q}_c)$
+    \EndFor
+    \State $s^*(c) \leftarrow \arg\max_{s \in \mathcal{S}}\; \text{score}(c, s)$
+\EndFor
+\Statex
+\Statex \textbf{Inference phase}
+\Require Test question $q$, transform $T$, centroids $\{\mu_c\}$, map $s^*$, budget $k$
+\Ensure  Ranked list $L$ of $k$ documents
+\State $\mathbf{z}_q \leftarrow T.\textsc{Transform}(\textsc{Embed}(q))$
+    \Comment{project into 10-D UMAP space}
+\State $\hat{c} \leftarrow \arg\min_{c}\; \|\mathbf{z}_q - \mu_c\|_2$
+    \Comment{nearest training centroid}
+\State $L \leftarrow \textsc{NaiveRetrieve}(q,\; s^*(\hat{c}),\; k)$
+    \Comment{retrieve from pre-built index for $s^*(\hat{c})$}
+\State \Return $L$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Evaluation design.}
+Algorithm~\ref{alg:tc-inference} is evaluated against a fixed global baseline
+(\texttt{10000\_hierarchical} applied uniformly to all queries) on a 75/25
+train/test question split (seed\,=\,42).
+The training split ($n_{\text{train}}{=}663$) is used to fit the UMAP transform,
+discover the cluster topology, and select the optimal strategy $s^*(c)$ per cluster.
+The held-out test split ($n_{\text{test}}{=}221$) is used exclusively for
+evaluation: each test question is projected into training UMAP space and assigned
+to its nearest centroid; no test-set labels are used in any learning step.
+HDBSCAN yields 29 semantic clusters plus a noise group
+(cluster\,$-1$, $n_{\text{train}}{=}72$); all 30 groups participate in
+strategy selection on equal terms.
+Figure~\ref{fig:tc-umap} shows the 2D UMAP projection of training questions
+coloured by cluster-optimal strategy, illustrating the semantic structure
+that drives strategy assignment.
+
+% \begin{figure}[t]
+% \centering
+% \includegraphics[width=\linewidth]{images/tc_umap_clusters.pdf}
+% \caption{2D UMAP projection of training questions (cosine distance metric),
+% coloured by each cluster's optimal chunking strategy.
+% The embedding space self-organises into semantically coherent regions:
+% clusters dominated by amendment debates (orange) favour \texttt{S10\_amendment};
+% comparative editorial questions (green) favour \texttt{S9\_topic\_noVotes};
+% heterogeneous procedural debates (blue) favour the large-window baseline.
+% Cluster ids match those in Table~\ref{tab:cluster-best-chunking}.}
+% \label{fig:tc-umap}
+% \end{figure}

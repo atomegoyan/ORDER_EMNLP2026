@@ -1,0 +1,39 @@
+# ── Core scientific stack ───────────────────────────────────────────────
+numpy>=1.26,<2.0
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4
+joblib>=1.3
+tqdm>=4.66
+python-dotenv>=1.0
+regex>=2024.4
+
+# ── Embeddings, indexing, retrieval ─────────────────────────────────────
+chromadb>=0.5,<0.6
+cohere>=5.11
+openai>=1.40
+bm25s>=0.2.6
+langchain-text-splitters>=0.2
+
+# ── Clustering & dimensionality reduction (TC-Chunking / TC-Metadata) ───
+umap-learn>=0.5.6
+hdbscan>=0.8.36
+numba>=0.59
+
+# ── Notebooks & plotting ────────────────────────────────────────────────
+jupyterlab>=4.0
+ipykernel>=6.29
+matplotlib>=3.8
+seaborn>=0.13
+
+# ── Optional: SOTA baselines (install only if reproducing those rows) ───
+# HippoRAG v2 — scripts/SOTA/HippoRAGv2-main/
+# hipporag>=2.0
+# torch>=2.2
+# transformers>=4.40
+#
+# LinearRAG — see scripts/SOTA/LinearRAG-main/requirements.txt
+# sentence-transformers>=3.0
+# transformers>=4.40
+# spacy>=3.7
+# networkx>=3.2

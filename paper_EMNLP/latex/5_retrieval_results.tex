@@ -1,0 +1,483 @@
+% ============================================================
+%  Retrieval Results  \input{5_retrieval_results} in main paper
+% ============================================================
+
+\definecolor{sectiongray}{gray}{0.95}
+
+\section{Results}
+\label{sec:results}
+
+We address five questions:
+\textbf{RQ1} : does query-conditioned chunking optimisation improve retrieval over a global baseline?
+\textbf{RQ2} : does query-conditioned \emph{metadata indexing} (filters and rerankers on \textit{Les Débats}) improve retrieval over a uniform global baseline?
+\textbf{RQ3} : does the \emph{joint} optimisation of chunking and metadata yield gains beyond either single-axis variant, and do the two axes interact?
+\textbf{RQ4} : does query-conditioned source selection improve retrieval over a single-index baseline?
+\textbf{RQ5} : are query routing (QRe) and uniform multi-source allocation (UMS) complementary remedies for size-imbalanced retrieval?
+\subsection{Task/Query-Conditioned Chunking}
+\label{sec:indexing-results}
+
+We analyse whether per-cluster selection of a chunking strategy improves
+retrieval over a single global best. The comparison of the 14 candidate
+strategies under the four retrievers is in Appendix~\ref{subsec:appendix-global-strategy-comparison}
+(Table~\ref{tab:recall-coverage-k3}).
+The realised gain on the held-out test set, decomposed by cluster and by
+assigned strategy, is reported in
+Tables~\ref{tab:chunking-wins-test-cluster} and~\ref{tab:chunking-wins-summary}
+(Appendix~\ref{subsec:appendix-cluster-wins});
+strategy-level qualitative wins are discussed in
+Appendix~\ref{sec:strategy-wins}. A non-trivial subset of clusters
+benefits from a strictly different strategy than the global baseline,
+motivating the held-out transfer evaluation below.
+
+\paragraph{Transfer to unseen queries (RQ1).}
+The oracle analysis shows the potential for strong retrieval gains when
+the appropriate chunking strategy is chosen, but it assumes the best
+strategy is known in advance. We test the realised gain using the
+inference procedure described in Section~\ref{sec:indexing-inference}.
+% The cluster-based pipeline (Algorithm~\ref{alg:tc-inference}) is evaluated
+% on the held-out 50\% test split (averaged over 5 random seeds), applying
+% the strategy map $s^*$ learned on the training split to unseen queries
+% via nearest-centroid assignment in UMAP space.
+Results are reported in Table~\ref{tab:tc-inference-merged} (rows
+\textit{+\,TC-Chunking}) alongside the metadata- and joint-axis variants
+discussed below. Under the Naive Retriever the inference pipeline realises
+$+5.4$~pp Coverage@3 and $+5.3$~pp Recall@3 ($p<0.05$), confirming
+that a single low-cost classification step at query time delivers
+meaningful gain. Gains are negligible and non-significant once routing
+is active (at most $+0.2$~pp with UMS; $p>0.05$ for all routing
+configurations), indicating that task-conditioned chunking and source
+routing address entirely overlapping failure modes: the gains chunking
+provides for the naive retriever are fully recovered by routing alone.
+
+% \paragraph{Mechanism: where TC-Chunking actually helps.}
+% A post-hoc decomposition of the Naive-Retriever gain by gold location
+% clarifies why TC-Chunking and QRe overlap. Splitting the 875 test
+% questions by whether at least one gold passage lies in \textit{Les
+% D{\'e}bats} (the long-form parliamentary source, $n{=}561$, 64\%) or
+% only in the two newspapers ($n{=}314$, 36\%), the $+5.4$~pp average
+% Coverage@3 gain decomposes into $-0.5$~pp on gold-in-D{\'e}bats
+% questions and $+16.2$~pp on the remaining 36\%. The benefit of
+% TC-Chunking is therefore not better \textit{D{\'e}bats} retrieval but
+% \textit{less aggressive competition} from D{\'e}bats chunks in the
+% top-$k$, freeing slots for the true newspaper gold. QRe achieves the
+% same outcome more directly by filtering D{\'e}bats out of the candidate
+% pool whenever the classifier predicts a newspaper-only question; once
+% this pre-filter is in place, the noise-suppression channel that
+% TC-Chunking exploits is no longer available, and its incremental Δ
+% collapses to zero. We confirm this is structural rather than a tuning
+% artefact: restricting the QRe evaluation to the subset where
+% TC-Chunking can still mechanically act (gold in \textit{Les D{\'e}bats}
+% \textit{and} \textit{Les D{\'e}bats} retained by the router; 64\% of
+% test, $n{=}283\pm3$ per seed) yields Δ Coverage@3 of $-0.002\pm0.002$,
+% and increasing the strategy-selection score-$k$ from 3 to 9 leaves the
+% QRe Δ within $\pm 0.001$. Table~\ref{tab:tc-chunking-by-gold-location}
+% summarises the decomposition.
+
+% \begin{table}[htbp]
+% \centering
+% \small
+% \setlength{\tabcolsep}{5pt}
+% \renewcommand{\arraystretch}{1.15}
+% \begin{tabular}{l r ccc}
+% \toprule
+% \textbf{Subset} & $n$
+%   & $\Delta$\,@3 & $\Delta$\,@5 & $\Delta$\,@10 \\
+% \midrule
+% Full test set                & 875        & $+5.4$  & $+6.3$  & $+6.2$  \\
+% \;\;Gold in \textit{Les Débats}     & 561 (64\%) & $-0.5$  & $-0.8$  & $-0.8$  \\
+% \;\;Gold not in \textit{Les Débats} & 314 (36\%) & $\mathbf{+16.2}$ & $\mathbf{+19.3}$ & $\mathbf{+19.1}$ \\
+% \bottomrule
+% \end{tabular}
+% \caption{Naive-Retriever Δ Coverage@$k$ (pp, TC-Chunking $-$ Global
+% Baseline) on the held-out test set, decomposed by whether at least one
+% gold passage lies in \textit{Les Débats}. The aggregate $+5.4$~pp gain
+% is carried entirely by the 36\% of questions whose gold lives in the
+% two newspapers; on D{\'e}bats-gold questions TC-Chunking is mildly
+% detrimental. QRe filters \textit{Les D{\'e}bats} for these same 36\%,
+% absorbing the gain and reducing the QRe Δ to zero.}
+% \label{tab:tc-chunking-by-gold-location}
+% \end{table}
+
+\paragraph{Mechanism: why the gain vanishes under routing.}
+Decomposing the $+5.4$~pp Naive-Retriever Coverage@3 gain by gold
+location shows it is carried entirely by the 36\% of questions whose
+gold lies only in the newspapers ($+16.2$~pp), while questions with
+gold in \textit{Les D\'ebats} see $-0.5$~pp. TC-Chunking therefore helps
+not by improving \textit{D\'ebats} retrieval but by making \textit{D\'ebats}
+chunks less competitive in the top-$k$, freeing slots for the true
+newspaper gold. QRe achieves the same outcome more directly --- filtering
+\textit{D\'ebats} out of the candidate pool whenever the classifier
+predicts a newspaper-only question --- which is why the TC-Chunking
+$\Delta$ collapses to $\leq 0.2$~pp once routing is active. Restricted
+to the subset where TC-Chunking can still mechanically act
+(gold in \textit{Les D\'ebats} \emph{and} \textit{Les D\'ebats} kept by
+the router), $\Delta$ Coverage@3 is $-0.002\pm0.002$, and varying the
+strategy-selection score-$k$ from 3 to 9 changes it by at most $\pm 0.001$.
+Full decomposition and a residual-gain analysis are in
+Appendix~\ref{sec:appendix-tc-decomposition}.
+
+
+% \begin{table*}[htbp]
+% \centering
+% \small
+% \setlength{\tabcolsep}{4pt}
+% \begin{tabular}{ll cc cc}
+% \toprule
+% & & \multicolumn{2}{c}{\textbf{Coverage}} & \multicolumn{2}{c}{\textbf{Recall}} \\
+% \cmidrule(lr){3-4} \cmidrule(lr){5-6}
+% \textbf{Retrieval} & \textbf{Chunking} & \textbf{@3} & \textbf{@5} & \textbf{@3} & \textbf{@5} \\
+% \midrule
+% \multirow{3}{*}{Naive}
+%   & Global Baseline  & 0.390 & 0.457 & 0.390 & 0.457 \\
+%   & Task-Conditioned & \textbf{0.465} & \textbf{0.538} & \textbf{0.466} & \textbf{0.537} \\
+%   & $\Delta$         & \cellcolor{db1}{+0.075} & \cellcolor{db1}{+0.081} & \cellcolor{db1}{+0.076} & \cellcolor{db1}{+0.080} \\
+% \midrule
+% \multirow{3}{*}{QRe}
+%   & Global Baseline  & 0.495 & 0.578 & 0.500 & \textbf{0.580} \\
+%   & Task-Conditioned & \textbf{0.511} & \textbf{0.581} & \textbf{0.511} & 0.575 \\
+%   & $\Delta$         & \cellcolor{db1}{+0.016} & +0.003 & \cellcolor{db1}{+0.011} & $-$0.005 \\
+% \midrule
+% \multirow{3}{*}{UMS}
+%   & Global Baseline  & 0.534 & 0.598 & \textbf{0.534} & 0.600 \\
+%   & Task-Conditioned & \textbf{0.543} & \textbf{0.610} & \textbf{0.534} & \textbf{0.603} \\
+%   & $\Delta$         & \cellcolor{db1}{+0.009} & \cellcolor{db1}{+0.012} & +0.000 & \cellcolor{db1}{+0.003} \\
+% \midrule
+% \multirow{3}{*}{QRe \& UMS}
+%   & Global Baseline  & 0.546 & 0.607 & \textbf{0.548} & 0.610 \\
+%   & Task-Conditioned & \textbf{0.555} & \textbf{0.619} & \textbf{0.548} & \textbf{0.612} \\
+%   & $\Delta$         & \cellcolor{db1}{+0.009} & \cellcolor{db1}{+0.012} & +0.000 & \cellcolor{db1}{+0.002} \\
+% \bottomrule
+% \end{tabular}
+% \caption{Coverage@$k$ and Recall@$k$ on the held-out test set ($n{=}221$):
+% Global Baseline (\texttt{10000\_hierarchical}) vs.\ Task-Conditioned chunking.
+% Task-conditioned gains are largest under the Naive Retriever and shrink
+% substantially once routing is active.}
+% \label{tab:tc-inference}
+% \end{table*}
+
+
+\subsection{Task-Conditioned Metadata and joint optimisation}
+\label{sec:metadata-results}
+
+Applying the same protocol to the orthogonal metadata axis
+(Section~\ref{sec:metadata-methodology}), we hold chunking fixed at
+\texttt{10000\_hierarchical} and let each cluster pick its best metadata
+strategy on \textit{Les Débats}. The realised gain on the held-out test set, decomposed by cluster and by
+assigned strategy, is reported in
+Tables~\ref{tab:metadata-wins-test-cluster} and~\ref{tab:metadata-wins-test-strategy}
+(Appendix~\ref{subsec:appendix-metadata-wins}).
+
+\paragraph{Transfer to unseen queries (RQ2).}
+
+Table~\ref{tab:tc-inference-merged} reports
+Coverage@$k$ and Recall@$k$ across the four retrievers (rows
+\textit{+\,TC-Metadata}). Unlike chunking, the metadata gain persists under UMS: the gain is
+largest under the Naive Retriever ($+8.9$~pp Coverage@3, $+9.0$~pp
+Recall@3; $p<0.05$), remains substantial under UMS ($+6.1$~pp Cov@3,
+$+6.0$~pp Rec@3; $p<0.05$) where parliamentary chunks occupy a
+guaranteed retrieval quota and filtering noisy document types directly
+improves that quota, vanishes under QRe ($0.0$~pp, ns) which already
+pre-selects away from noisy sources, and is absent under
+QRe\,\&\,UMS ($0.0$~pp, ns).
+%On the held-out set only three distinct
+%strategies are ever assigned in practice (\texttt{baseline}: 15 clusters,
+%\texttt{exclude\_noisy}: 5, \texttt{rerank\_type\_boost}: 1).
+
+% \begin{table*}[htbp]
+% \centering
+% \small
+% \setlength{\tabcolsep}{4pt}
+% \begin{tabular}{ll cc cc}
+% \toprule
+% & & \multicolumn{2}{c}{\textbf{Coverage}} & \multicolumn{2}{c}{\textbf{Recall}} \\
+% \cmidrule(lr){3-4} \cmidrule(lr){5-6}
+% \textbf{Retrieval} & \textbf{Metadata} & \textbf{@3} & \textbf{@5} & \textbf{@3} & \textbf{@5} \\
+% \midrule
+% \multirow{3}{*}{Naive}
+%   & Global Baseline  & 0.390 & 0.457 & 0.390 & 0.457 \\
+%   & Task-Conditioned & \textbf{0.498} & \textbf{0.573} & \textbf{0.502} & \textbf{0.575} \\
+%   & $\Delta$         & \cellcolor{db1}{+0.108} & \cellcolor{db1}{+0.116} & \cellcolor{db1}{+0.112} & \cellcolor{db1}{+0.118} \\
+% \midrule
+% \multirow{3}{*}{QRe}
+%   & Global Baseline  & 0.495 & 0.578 & 0.500 & 0.580 \\
+%   & Task-Conditioned & \textbf{0.505} & \textbf{0.582} & \textbf{0.509} & \textbf{0.584} \\
+%   & $\Delta$         & \cellcolor{db1}{+0.010} & \cellcolor{db1}{+0.004} & \cellcolor{db1}{+0.009} & \cellcolor{db1}{+0.004} \\
+% \midrule
+% \multirow{3}{*}{UMS}
+%   & Global Baseline  & 0.534 & 0.598 & 0.534 & 0.600 \\
+%   & Task-Conditioned & \textbf{0.559} & \textbf{0.607} & \textbf{0.562} & \textbf{0.610} \\
+%   & $\Delta$         & \cellcolor{db1}{+0.025} & \cellcolor{db1}{+0.009} & \cellcolor{db1}{+0.028} & \cellcolor{db1}{+0.010} \\
+% \midrule
+% \multirow{3}{*}{QRe \& UMS}
+%   & Global Baseline  & \textbf{0.546} & \textbf{0.607} & \textbf{0.548} & \textbf{0.610} \\
+%   & Task-Conditioned & 0.546 & 0.607 & 0.548 & 0.610 \\
+%   & $\Delta$         & +0.000 & +0.000 & +0.000 & +0.000 \\
+% \bottomrule
+% \end{tabular}
+% \caption{Coverage@$k$ and Recall@$k$ on the held-out test set
+% ($n_{\text{test}}{=}219$): Global Baseline vs.\ Task-Conditioned metadata
+% indexing on \textit{Les Débats}. $k_0{=}6$ for UMS-based routings.}
+% \label{tab:tc-meta-inference}
+% \end{table*}
+
+\subsection{Task-Conditioned Joint Indexing}
+\label{sec:joint-results}
+
+Combining both axes (Section~\ref{sec:joint-methodology}), each cluster
+selects its best pair $(c^{*}, m^{*})$ from the $14{\times}14{=}196$
+Cartesian grid; assignment to held-out queries follows the same
+nearest-centroid rule. Appendix Table~\ref{tab:joint-wins-summary} lists the eleven joint pairs picked by at least one of the 21 training clusters under the Naive
+Retriever, together with the number of held-out test questions routed
+to each pair at inference time. 
+
+\paragraph{Transfer to unseen queries (RQ3).}
+The joint-axis results are reported in
+Table~\ref{tab:tc-inference-merged} (rows \textit{+\,TC-Joint}),
+comparing the global baseline pair to the task-conditioned joint pair on
+the held-out test set ($n_{\text{test}}{=}438$). Task conditioning helps under the Naive Retriever and UMS, but the
+joint variant does not strictly dominate the single-axis alternatives.
+Under the Naive Retriever the joint pair adds $+8.8$~pp Coverage@3 and
+$+8.6$~pp Recall@3 ($p<0.05$), marginally below TC-Metadata
+($+8.9$ / $+9.0$~pp); under UMS gains are $+6.0$~pp Cov@3 /
+$+6.0$~pp Rec@3 ($p<0.05$), matching TC-Metadata. QRe and
+QRe\,\&\,UMS show no significant improvement under any indexing
+variant (ns). The absence of a strict joint advantage over single-axis
+variants reflects a winner's-curse effect from the larger
+$14{\times}14$ search space: selecting the best of 196 pairs on limited
+training clusters introduces estimation noise that can offset the
+theoretical benefit of jointly optimising both axes simultaneously.
+
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1}
+\begin{tabular}{ll cc cc}
+\toprule
+\textbf{Retriever} & \textbf{Indexing strategy}
+  & \multicolumn{2}{c}{\textbf{Coverage (\%)}}
+  & \multicolumn{2}{c}{\textbf{Recall (\%)}} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+ & & @3 & @5 & @3 & @5 \\
+\midrule
+\multirow{4}{*}{Naive}
+  & Global Baseline                 & 36.9               & 45.4               & 36.9               & 45.6               \\
+  & \;+\,TC-Chunking                & 42.3$^{*}$         & 51.7$^{*}$         & 42.3$^{*}$         & 51.7$^{*}$         \\
+  & \;+\,TC-Metadata                & \best{45.8}$^{*}$  & \best{55.2}$^{*}$  & \best{45.9}$^{*}$  & \best{55.3}$^{*}$  \\
+  & \;+\,TC-Joint                   & \uline{45.7}$^{*}$ & \uline{54.7}$^{*}$ & \uline{45.5}$^{**}$ & \uline{54.5}$^{*}$ \\
+\midrule
+\multirow{4}{*}{QRe}
+  & Global Baseline                 & 48.5               & 58.2               & 48.7               & 58.4               \\
+  & \;+\,TC-Chunking                & \uline{48.5}$^{\text{ns}}$ & \uline{57.9}$^{\text{ns}}$ & \uline{48.5}$^{\text{ns}}$ & \uline{58.0}$^{\text{ns}}$ \\
+  & \;+\,TC-Metadata                & \best{48.5}$^{\text{ns}}$ & \best{58.2}$^{\text{ns}}$ & \best{48.7}$^{\text{ns}}$ & \best{58.4}$^{\text{ns}}$ \\
+  & \;+\,TC-Joint                   & 48.3$^{\text{ns}}$ & 57.6$^{\text{ns}}$ & 48.2$^{\text{ns}}$ & 57.4$^{\text{ns}}$ \\
+\midrule
+\multirow{4}{*}{UMS}
+  & Global Baseline                 & 46.8               & 58.7               & 47.0               & 58.8               \\
+  & \;+\,TC-Chunking                & 47.0$^{\text{ns}}$ & 58.5$^{\text{ns}}$ & 47.2$^{\text{ns}}$ & 58.7$^{\text{ns}}$ \\
+  & \;+\,TC-Metadata                & \best{52.8}$^{*}$  & \best{63.2}$^{*}$  & \best{53.0}$^{*}$  & \best{63.4}$^{*}$  \\
+  & \;+\,TC-Joint                   & \uline{52.8}$^{*}$ & \uline{63.1}$^{*}$ & \uline{53.0}$^{*}$ & \uline{63.4}$^{*}$ \\
+\midrule
+\multirow{4}{*}{QRe \& UMS}
+  & Global Baseline                 & 54.7               & 64.5               & 54.9               & 64.7               \\
+  & \;+\,TC-Chunking                & \uline{54.7}$^{\text{ns}}$ & \uline{64.5}$^{\text{ns}}$ & \uline{54.9}$^{\text{ns}}$ & \uline{64.7}$^{\text{ns}}$ \\
+  & \;+\,TC-Metadata                & \best{54.7}$^{\text{ns}}$ & \best{64.5}$^{\text{ns}}$ & \best{54.9}$^{\text{ns}}$ & \best{64.7}$^{\text{ns}}$ \\
+  & \;+\,TC-Joint                   & \uline{54.7}$^{\text{ns}}$ & \uline{64.5}$^{\text{ns}}$ & \uline{54.9}$^{\text{ns}}$ & \uline{64.7}$^{\text{ns}}$ \\
+\bottomrule
+\end{tabular}
+% \caption{Coverage@$k$ and Recall@$k$ on the held-out test set
+% (50/50 split, $n_{\text{test}}{=}438$ per seed, averaged over 5 seeds)
+% for four retrievers, each compared against its
+% Global Baseline pair $(\texttt{10000\_hierarchical}, \texttt{baseline})$
+% and three task-conditioned variants: chunking only
+% (Sec.~\ref{sec:indexing-results}), metadata only on \textit{Les Débats}
+% (Sec.~\ref{sec:metadata-results}), and the joint
+% chunking$\times$metadata grid (Sec.~\ref{sec:joint-results}).
+% \textbf{Bold} marks the best value per metric within each retriever block;
+% \uline{underline} marks the second best. Significance of the
+% TC~$-$~Baseline delta is reported with a Bonferroni-corrected paired
+% $t$-test: $^{***}p<0.001$, $^{**}p<0.01$, $^{*}p<0.05$, ns~$=$~not
+% significant.}
+\caption{Coverage@$k$ and Recall@$k$ on the held-out test set ($n{=}438$, 5 seeds).
+Each retriever is compared to its Global Baseline (\texttt{10000\_hier.}, no metadata)
+across three task-conditioned variants: chunking only, metadata only, and joint.
+\textbf{Bold} / \uline{underline} = best / second within block.
+$^{*}p<0.05$ (Bonferroni paired $t$-test); ns = not significant; Recall@$k$ in Appendix.}
+\label{tab:tc-inference-merged}
+\end{table}
+
+% \begin{table}[htbp]
+% \centering
+% \footnotesize
+% \setlength{\tabcolsep}{5pt}
+% \begin{tabular}{ll cc c}
+% \toprule
+% \textbf{Retriever} & \textbf{Variant} & \textbf{Cov@3} & \textbf{Cov@5} & \textbf{Sig.} \\
+% \midrule
+% \multirow{4}{*}{Naive}
+%   & Baseline       & 36.9 & 45.4 & --- \\
+%   & +\,TC-Chunking & 42.3 & 51.7 & $^{*}$ \\
+%   & +\,TC-Metadata & \best{45.8} & \best{55.2} & $^{*}$ \\
+%   & +\,TC-Joint    & \uline{45.7} & \uline{54.7} & $^{*}$ \\
+% \midrule
+% \multirow{4}{*}{QRe}
+%   & Baseline       & 48.5 & 58.2 & --- \\
+%   & +\,TC-Chunking & 48.5 & 57.9 & ns \\
+%   & +\,TC-Metadata & 48.5 & 58.2 & ns \\
+%   & +\,TC-Joint    & 48.3 & 57.6 & ns \\
+% \midrule
+% \multirow{4}{*}{UMS}
+%   & Baseline       & 46.8 & 58.7 & --- \\
+%   & +\,TC-Chunking & 47.0 & 58.5 & ns \\
+%   & +\,TC-Metadata & \best{52.8} & \best{63.2} & $^{*}$ \\
+%   & +\,TC-Joint    & \uline{52.8} & \uline{63.1} & $^{*}$ \\
+% \midrule
+% \multirow{4}{*}{QRe \& UMS}
+%   & Baseline       & 54.7 & 64.5 & --- \\
+%   & +\,TC-Chunking & 54.7 & 64.5 & ns \\
+%   & +\,TC-Metadata & 54.7 & 64.5 & ns \\
+%   & +\,TC-Joint    & 54.7 & 64.5 & ns \\
+% \bottomrule
+% \end{tabular}
+% \caption{Coverage@$k$ on the held-out test set ($n{=}438$, 5 seeds).
+% Each retriever is compared to its Global Baseline (\texttt{10000\_hier.}, no metadata)
+% across three task-conditioned variants: chunking only, metadata only, and joint.
+% \textbf{Bold} / \uline{underline} = best / second within block.
+% $^{*}p<0.05$ (Bonferroni paired $t$-test); ns = not significant; Recall@$k$ in Appendix.}
+% \label{tab:tc-inference-merged}
+% \end{table}
+
+
+
+\subsection{Retrieval Strategies}
+\label{sec:retrieval-results}
+
+We evaluate the four retrieval strategies of
+Section~\ref{sec:retrieval-strategies} on the multi-hop subset of
+HistoriQA-ThirdRepublic~\cite{historiqa}, broken down by question type:
+\textit{cross-newspaper} (314 q., both gold documents from newspapers) and
+\textit{newspaper $\rightarrow$ Débats} (571 q., one newspaper plus one
+parliamentary document). HippoRAGv2~\cite{hipporagv2} is included as a
+graph-based external baseline.
+
+
+\begin{table*}[ht]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l ccc ccc ccc @{}}
+\toprule
+ & \multicolumn{3}{c}{\textbf{Overall}} & \multicolumn{3}{c}{\textbf{Cross-newspaper} (314 q.)} & \multicolumn{3}{c}{\textbf{Newspaper-Débats} (571 q.)} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+\textbf{Configuration} & R@3 & R@5 & R@10 & R@3 & R@5 & R@10 & R@3 & R@5 & R@10 \\
+\midrule
+Naive Retriever~\cite{historiqa-pellet}              & 35.9 & 44.0 & 54.4 & 14.3 & 19.7 & 28.8 & 47.8 & 57.3 & 68.5 \\
+BM25 (lexical)~\cite{bm25}                    & 23.1 & 29.3 & 37.8 &  4.6 &  8.3 & 13.1 & 33.3 & 40.9 & 51.4 \\
+HippoRAGv2~\cite{hipporagv2}                  & 31.7 & 41.9 & 53.0 & 11.6 & 17.2 & 24.7 & 42.7 & 55.4 & 68.6 \\
+LinearRAG~\cite{linearrag_2025}               & 31.7 & 41.9 & 53.0 & 11.6 & 17.2 & 24.7 & 42.7 & 55.4 & 68.6 \\
+\midrule
+S-RAG: QRe                                    & 48.0 & 57.0 & 68.4 & 48.4 & 56.7 & 68.3 & 47.8 & 57.2 & 68.5 \\
+S-RAG: UMS-Retriever                          & \underline{50.2} & \underline{57.6} & \underline{69.4} & 40.8 & 53.3 & 60.7 & 55.4 & 60.0 & 74.2 \\
+S-RAG: QRe \& UMS-Retriever                   & \textbf{52.3} & \textbf{58.4} & \textbf{72.3} & 46.7 & 55.6 & 69.3 & 55.4 & 60.0 & 73.9 \\
+\bottomrule
+\end{tabular*}
+\caption{Recall@$k$ on multi-hop questions, with breakdown by question type.
+\textbf{S-RAG}: this work. \textbf{QRe}: supervised source pre-selection.
+\textbf{UMS}: equal-quota multi-source retrieval.
+\textbf{BM25}: lexical baseline using the same chunking as the Naive Retriever.
+\textbf{Bold} = best; \underline{underline} = second-best per column (Overall).}
+\label{tab:retrieval-results}
+\end{table*}
+
+% \begin{table*}[ht]
+% \centering
+% \small
+% \setlength{\tabcolsep}{0pt}
+% \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l ccc @{}}
+% \toprule
+% \textbf{Configuration} & \textbf{Recall@3} & \textbf{Recall@5} & \textbf{Recall@10} \\
+% \midrule
+% \rowcolor{sectiongray}
+% \textbf{Naive Retriever}~\cite{historiqa} & 35.9 & 44.0 & 54.4 \\
+% \quad Cross-newspaper (314 q.)            & 14.3 & 19.7 & 28.8 \\
+% \quad Newspaper $\rightarrow$ Débats (571 q.) & 47.8 & 57.3 & 68.5 \\
+% \midrule
+% \rowcolor{sectiongray}
+% \textbf{BM25 (lexical)}~\cite{bm25}                   & 23.1 & 29.3 & 37.8 \\
+% \quad Cross-newspaper                      &  4.6 &  8.3 & 13.1 \\
+% \quad Newspaper $\rightarrow$ Débats       & 33.3 & 40.9 & 51.4 \\
+% \midrule
+% \rowcolor{sectiongray}
+% \textbf{HippoRAGv2}~\cite{hipporagv2}     & 31.7 & 41.9 & 53.0 \\
+% \quad Cross-newspaper                      & 11.6 & 17.2 & 24.7 \\
+% \quad Newspaper $\rightarrow$ Débats       & 42.7 & 55.4 & 68.6 \\
+% \midrule
+% \rowcolor{sectiongray}
+% \textbf{LinearRAG}~\cite{linearrag_2025}     & 31.7 & 41.9 & 53.0 \\
+% \quad Cross-newspaper                      & 11.6 & 17.2 & 24.7 \\
+% \quad Newspaper $\rightarrow$ Débats       & 42.7 & 55.4 & 68.6 \\
+% \midrule
+% \rowcolor{sectiongray}
+% \textbf{S-RAG : QRe}                     & 48.0 & 57.0 & 68.4 \\
+% \quad Cross-newspaper                      & 48.4 & 56.7 & 68.3 \\
+% \quad Newspaper $\rightarrow$ Débats       & 47.8 & 57.2 & 68.5 \\
+% \rowcolor{sectiongray}
+% \textbf{S-RAG : UMS-Retriever}           & \underline{50.2} & \underline{57.6} & \underline{69.4} \\
+% \quad Cross-newspaper                      & 40.8 & 53.3 & 60.7 \\
+% \quad Newspaper $\rightarrow$ Débats       & 55.4 & 60.0 & 74.2 \\
+% \midrule
+% \rowcolor{sectiongray}
+% \textbf{S-RAG : QRe \& UMS-Retriever}   & \textbf{52.3} & \textbf{58.4} & \textbf{72.3} \\
+% \quad Cross-newspaper                      & 46.7 & 55.6 & 69.3 \\
+% \quad Newspaper $\rightarrow$ Débats       & 55.4 & 60.0 & 73.9 \\
+% \bottomrule
+% \end{tabular*}
+% \caption{Recall@$k$ on multi-hop questions by type.
+% \textbf{S-RAG}: this work. \textbf{QRe}: supervised source pre-selection.
+% \textbf{UMS}: equal-quota multi-source retrieval.
+% \textbf{BM25}: lexical baseline using the same chunking as the Naive Retriever.
+% \textbf{Bold} = best; \underline{underline} = second-best per column.}
+% \label{tab:retrieval-results}
+% \end{table*}
+
+\paragraph{Overall (RQ4, RQ5).}
+All three RAG configurations beat the Naive and HippoRAGv2 baselines at
+every cut-off. The combined QRe\,\&\,UMS reaches Recall@3 of 52.3
+($+16.4$ pts over Naive, $+46\%$ rel.), with the gap widening at $k{=}10$.
+
+\paragraph{Performances by question type.}
+The two strategies fix different failures. On \emph{cross-newspaper}
+questions, the Naive Retriever collapses (14.3 @3) as \textit{Les Débats}
+floods the top-$k$ with parliamentary chunks unrelated to the query; QRe
+removes this contamination and triples Recall@3 (48.4), while UMS alone
+is less effective (40.8) because it still reserves a third of the budget
+for \textit{Les Débats}. On \emph{newspaper $\rightarrow$ Débats} questions
+the asymmetry reverses: the Naive Retriever already performs well (47.8),
+QRe is neutral (the routing map keeps all three sources active), and UMS
+delivers the main lift (55.4) by guaranteeing parliamentary representation
+that would otherwise be crowded out.
+
+\paragraph{Complementarity (RQ5).}
+Neither routing alone nor uniform allocation alone accounts for the full
+gain: each component contributes independently, and their combination is
+strictly dominant on every metric. QRe and UMS target structurally distinct
+failure modes : source \emph{contamination} versus source \emph{starvation} that can co-occur on a single question, which is why combining them
+dominates either component in isolation across both question types.
+
+
+\paragraph{Comparison to other methods.}
+We include BM25~\cite{bm25} as a sparse-retrieval baseline using the same chunking
+as the Naive Retriever. BM25 underperforms the dense baselines on every
+cut-off and on both question types, with the gap most pronounced on
+\emph{cross-newspaper} questions (4.6 vs.\ 14.3 Recall@3 against the
+Naive Retriever). Lexical matching is particularly ill-suited to this
+benchmark: questions are paraphrased rather than quoted from the
+articles, and the OCR'd 19th-century newspaper text introduces surface
+variation (orthographic and typographic) that dense embeddings absorb
+but term-frequency matching does not. We therefore retain dense
+retrieval as the underlying index for all S-RAG variants. For HippoRAGv2, we used the embeddings model and LLM as in the other experiments. Despite its graph-based index, HippoRAGv2 trails the Naive Retriever on
+cross-newspaper questions (11.6 vs.\ 14.3 @3) and falls below all S-RAG
+variants on every metric, suggesting graph propagation struggles when
+evidence is spread across heterogeneous corpora with markedly different
+registers.

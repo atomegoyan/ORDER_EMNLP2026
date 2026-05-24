@@ -1,0 +1,54 @@
+% ============================================================
+%  Appendix F — Dataset details for HistoriQA-ThirdRepublic
+%  Detailed corpus statistics, historical context, and question
+%  typology moved out of the main paper (Sec.~\ref{sec:dataset}).
+% ============================================================
+
+\paragraph{Historical context.}
+The corpus covers 1887, a dense political year (Boulangist crisis,
+Franco-German tensions, parliamentary scandals) in which parliamentary
+debates and the contemporaneous \textit{grande presse} were deeply
+intertwined: high-circulation dailies acted as both amplifiers of and
+partisan participants in political life. This makes the corpus a natural
+setting for multi-hop reasoning across institutional discourse and its
+mediation in the public sphere, with radically different rhetorical
+registers and political commitments.
+
+\paragraph{Corpora.}
+Three OCR collections from the Biblioth{\`e}que nationale de France:
+\textit{Les Débats parlementaires} (parliamentary transcripts of the
+Chambre des Députés) and two ideologically opposed newspapers,
+\textit{Le Gaulois} (monarchist-conservative) and \textit{L'Intransigeant}
+(socialist-to-populist). Each collection is indexed as an independent
+dense vector store with Cohere \texttt{embed-v4.0}. Key statistics are
+in Table~\ref{tab:corpus-stats}.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{\textit{Les Débats}} & \multirow{2}{*}{\makecell{\textit{Le}\\\textit{Gaulois}}} & \multirow{2}{*}{\makecell{\textit{L'Intr-}\\\textit{ansigeant}}} \\
+\cmidrule(lr){2-3}
+ & All & Filtered & & \\
+\midrule
+\# documents      & 3,229 & 963   & 78   & 79   \\
+Avg tokens/doc    & 2,020 & 4,433 & 922  & 376  \\
+Median tokens/doc &   279 &   716 & 802  & 317  \\
+Min--max tokens   & 1--63k & 143--63k & 51--4k & 6--1k \\
+\bottomrule
+\end{tabular}
+\caption{Corpus statistics. \textit{Les Débats} is reported both raw and
+after filtering out non-debate sections (agendas, vote lists). All three
+collections are indexed independently with Cohere \texttt{embed-v4.0}.}
+\label{tab:corpus-stats}
+\end{table}
+
+\paragraph{Question typology.}
+The benchmark contains 1{,}782 questions (897 single-hop, 885 multi-hop).
+Multi-hop questions decompose along two axes: a \emph{source-pair} axis
+(571 newspaper $\to$ \textit{Les Débats}, 314 cross-newspaper) and a
+\emph{category} axis (Bridge-Entity, Comparative, Follow-up). All
+questions are in French and historian-validated; we refer to the
+original release~\cite{historiqa} for construction details and
+inter-annotator agreement.

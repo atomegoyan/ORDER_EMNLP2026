@@ -1,0 +1,164 @@
+\begin{figure*}[t]
+\centering
+\footnotesize
+\begin{tikzpicture}[
+  % --- styles ---
+  corpus/.style={
+    rectangle, rounded corners=3pt, draw, line width=0.5pt,
+    minimum width=1.6cm, minimum height=0.65cm,
+    align=center, inner sep=2pt, font=\scriptsize
+  },
+  debats/.style={corpus, fill=gray!12, draw=gray!60},
+  gaulois/.style={corpus, fill=teal!15, draw=teal!70},
+  intran/.style={corpus, fill=cyan!12, draw=cyan!70},
+  indexbox/.style={
+    rectangle, rounded corners=3pt, draw, line width=0.4pt,
+    minimum width=1.05cm, minimum height=0.55cm,
+    align=center, inner sep=2pt, font=\scriptsize,
+    fill=gray!6, draw=gray!50
+  },
+  switchnode/.style={
+    rectangle, rounded corners=4pt, draw, line width=0.6pt,
+    minimum width=2.4cm, minimum height=0.95cm,
+    align=center, inner sep=3pt, font=\scriptsize,
+    fill=orange!12, draw=orange!75
+  },
+  panelhdr/.style={font=\small\bfseries},
+  panelsub/.style={font=\scriptsize\itshape, text=black!60},
+  caption/.style={font=\scriptsize, text=black!75},
+  axisbox/.style={
+    rectangle, rounded corners=4pt, draw, dashed, line width=0.5pt,
+    inner sep=8pt
+  },
+  offcolor/.style={draw=blue!40, fill=blue!2},
+  oncolor/.style={draw=orange!60, fill=orange!3},
+  flow/.style={->, line width=0.6pt, draw=black!60, >=stealth},
+  query/.style={
+    rectangle, rounded corners=3pt, draw, line width=0.5pt,
+    minimum width=4.2cm, minimum height=0.55cm,
+    align=center, inner sep=2pt, font=\scriptsize\itshape,
+    fill=orange!8, draw=orange!60
+  },
+  resultbox/.style={
+    rectangle, rounded corners=3pt, draw, line width=0.4pt,
+    minimum width=1.05cm, minimum height=0.55cm,
+    align=center, inner sep=2pt, font=\scriptsize
+  },
+  gold/.style={resultbox, fill=orange!25, draw=orange!85, line width=0.7pt}
+]
+
+% ====================================================================
+% LEFT PANEL — OFFLINE (document-conditioned)
+% ====================================================================
+\begin{scope}[local bounding box=offline]
+
+  \node[panelhdr, anchor=west] at (0, 4.2)
+    {\textcolor{blue!60!black}{OFFLINE}\;\; document-conditioned};
+  \node[panelsub, anchor=west] at (0, 3.85)
+    {discover question clusters $\rightarrow$ learn per-cluster optima};
+
+  % --- Corpora ---
+  \node[debats]  (D) at (0.85, 3.1) {\textit{Les Débats}};
+  \node[gaulois] (G) at (2.55, 3.1) {\textit{Le Gaulois}};
+  \node[intran]  (I) at (4.25, 3.1) {\textit{L'Intransigeant}};
+
+  % --- Pre-built per-cluster indices ---
+  \node[caption, anchor=west] at (0, 2.3)
+    {pre-built indices per cluster $c$:};
+
+  \node[indexbox] (idx1) at (0.65, 1.55) {$I_{c_1}$};
+  \node[indexbox] (idx2) at (1.75, 1.55) {$I_{c_2}$};
+  \node[indexbox] (idx3) at (2.85, 1.55) {$I_{c_3}$};
+  \node[caption]  at (3.65, 1.55) {$\cdots$};
+  \node[indexbox] (idxN) at (4.45, 1.55) {$I_{c_N}$};
+
+  % --- Strategy map note ---
+  \node[caption, anchor=west, align=left] at (0, 0.75)
+    {Each $I_c$ pairs $(\text{chunking}_c^{\star},\, \text{metadata}_c^{\star})$\\[-1pt]
+     learned by maximising Coverage@$k$ on cluster $c$.};
+
+  % --- Arrows ---
+  \draw[flow] (D.south) -- (idx1.north);
+  \draw[flow] (G.south) -- (idx2.north);
+  \draw[flow] (I.south) -- (idx3.north);
+
+\end{scope}
+
+% ====================================================================
+% RIGHT PANEL — ONLINE (query-conditioned)
+% ====================================================================
+\begin{scope}[xshift=8.8cm, local bounding box=online]
+
+  \node[panelhdr, anchor=west] at (0, 4.2)
+    {\textcolor{orange!80!black}{ONLINE}\;\; query-conditioned};
+  \node[panelsub, anchor=west] at (0, 3.85)
+    {one query $\rightarrow$ three switches $\rightarrow$ retrieve};
+
+  \node[query] (q) at (3.0, 3.1) {query $q$ + embedding $\mathbf{v}_q$};
+
+  \node[switchnode] (sw1) at (1.0, 1.85)
+    {\textbf{Switch 1}\\ chunking $s^\star(\hat{c})$\\ \tiny via cluster routing};
+  \node[switchnode] (sw2) at (3.5, 1.85)
+    {\textbf{Switch 2}\\ metadata $m^\star(\hat{c})$\\ \tiny via cluster routing};
+  \node[switchnode] (sw3) at (6.0, 1.85)
+    {\textbf{Switch 3}\\ active sources $\mathcal{A}_q$\\ \tiny via QRe classifier};
+
+  \draw[flow] (q.south) -- (sw1.north);
+  \draw[flow] (q.south) -- (sw2.north);
+  \draw[flow] (q.south) -- (sw3.north);
+
+  \node[caption, anchor=west] at (0, 0.85)
+    {top-$k$ retrieval (UMS quota over $\mathcal{A}_q$):};
+
+  \node[gold]     (o1) at (0.65, 0.15) {$\mathbf{G}\,\star$};
+  \node[intran]   (o2) at (1.75, 0.15) {$i$};
+  \node[gold]     (o3) at (2.85, 0.15) {$\mathbf{I}\,\star$};
+  \node[caption] at (3.65, 0.15) {$\cdots$};
+  \node[debats]   (oN) at (4.55, 0.15) {$d$};
+
+  \draw[flow] (sw1.south) -- (o1.north);
+  \draw[flow] (sw2.south) -- (o2.north);
+  \draw[flow] (sw3.south) -- (o3.north);
+
+\end{scope}
+
+% ====================================================================
+% Background tinted regions (drawn UNDER everything via background layer)
+% ====================================================================
+\begin{pgfonlayer}{background}
+  \node[axisbox, offcolor, fit=(offline)] {};
+  \node[axisbox, oncolor,  fit=(online)]  {};
+\end{pgfonlayer}
+
+% ====================================================================
+% Bridge: offline indices --> online switch 1 (drawn on top)
+% ====================================================================
+\draw[flow, dashed, draw=black!45]
+  ([yshift=-0.15cm]idxN.east) to[out=0, in=180]
+  ([yshift=0.15cm]sw1.west);
+
+\node[caption, anchor=south, font=\scriptsize\itshape, text=black!55]
+  at (7.3, 1.95) {nearest-centroid lookup};
+
+\end{tikzpicture}
+
+\caption{\textbf{ORDER at a glance.}
+\textbf{Left (offline, document-conditioned).} From the three corpora
+(\textit{Les Débats}, \textit{Le Gaulois}, \textit{L'Intransigeant}),
+we discover semantic question clusters and learn, per cluster~$c$, a
+pre-built index $I_c$ that pairs the best chunking strategy
+$\text{chunking}_c^{\star}$ with the best metadata configuration
+$\text{metadata}_c^{\star}$ (Sections~\ref{sec:indexing-methodology}
+and~\ref{sec:metadata-methodology}).
+\textbf{Right (online, query-conditioned).} At inference, a single
+embedding $\mathbf{v}_q$ flips three switches: (1)~per-cluster
+chunking and (2)~per-cluster metadata are selected by nearest-centroid
+assignment over the cluster menu on the left; (3)~the active source
+set $\mathcal{A}_q$ is predicted by a supervised query router (QRe,
+Section~\ref{sec:classifier}), and the retrieval budget is split
+evenly across the active sources via the uniform multi-source
+allocator (UMS, Section~\ref{sec:retrieval-strategies}). Online
+overhead is one embedding plus one nearest-centroid lookup. Gold
+documents are marked $\star$.}
+\label{fig:banner}
+\end{figure*}

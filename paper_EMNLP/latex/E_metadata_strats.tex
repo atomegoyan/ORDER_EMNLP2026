@@ -1,0 +1,268 @@
+\subsection{Metadata Strategy Families}
+\label{sec:appendix-metadata-families}
+
+This appendix provides full implementation details for the fourteen metadata
+strategies introduced in Section~\ref{sec:metadata-methodology}
+(Task-Conditioned Metadata Indexing).
+The strategies are evaluated in Section~\ref{sec:metadata-results}.
+
+All strategies apply exclusively to \textit{Les Débats}; newspaper collection
+retrieval is unaffected.
+Each strategy either restricts the candidate pool via a ChromaDB \texttt{where}
+filter applied at query time (\textbf{Filter}), re-ranks the retrieved
+candidates by adjusting cosine distances with additive bonuses/penalties
+(\textbf{Rerank}), or does both (\textbf{Hybrid}).
+The strategy \texttt{baseline} leaves both the index and the ranking unchanged
+and serves as the control condition in all comparisons.
+
+\paragraph{Document-type taxonomy.}
+The following type sets are referenced throughout the table.
+
+\begin{itemize}[leftmargin=1.5em, itemsep=2pt]
+  \item \textbf{Noisy types} (excluded by filter strategies):
+    \texttt{vote\_list}, \texttt{absence\_list}, \texttt{fragment},
+    \texttt{chamber\_header}, \texttt{scrutin}, \texttt{excuse},
+    \texttt{conge}, \texttt{compte\_rendu\_header}, \texttt{tirage\_sort}.
+
+  \item \textbf{Debate/legal types} (kept by positive-filter strategies):
+    \texttt{debate}, \texttt{legal\_text}, \texttt{law\_presentation},
+    \texttt{law\_adoption}, \texttt{petition}, \texttt{sommaire}.
+
+  \item \textbf{Boost types} (distance-reduced by rerank strategies, $\alpha$):
+    \texttt{debate}, \texttt{legal\_text}, \texttt{law\_presentation},
+    \texttt{law\_adoption}, \texttt{petition}, \texttt{sommaire},
+    \texttt{session\_opening}.
+
+  \item \textbf{Penalise types} (distance-increased by rerank strategies, $+\alpha$):
+    \texttt{vote\_list}, \texttt{absence\_list}, \texttt{fragment},
+    \texttt{chamber\_header}, \texttt{scrutin}, \texttt{excuse},
+    \texttt{conge}.
+\end{itemize}
+
+\paragraph{Reranking mechanism.}
+For rerank strategies the retrieved candidate list is re-scored by adding a
+small signed bonus $\delta_i$ to the cosine distance of each candidate $i$
+before re-sorting (lower distance = higher rank):
+\[
+  d'_i = d_i + \delta_i, \qquad \delta_i \in \mathbb{R}.
+\]
+A negative $\delta_i$ promotes the document; a positive $\delta_i$ demotes it.
+The magnitudes $\alpha$ listed in the table are the per-strategy constants
+defined in \texttt{scripts/retrieval\_utils.py}.
+
+\onecolumn
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.35}
+\setlength{\LTleft}{\fill}
+\setlength{\LTright}{\fill}
+\begin{longtable}{%
+  >{\raggedright\arraybackslash}p{3.2cm}   % Strategy ID
+  c                                         % Family
+  >{\raggedright\arraybackslash}p{2.4cm}   % Metadata field(s)
+  >{\raggedright\arraybackslash}p{5.2cm}   % Predicate / scoring rule
+  >{\raggedright\arraybackslash}p{3.6cm}   % Notes
+}
+% ── First-page caption + header ─────────────────────────────────────────────
+\caption{%
+  \textbf{Metadata strategies evaluated on \textit{Les Débats} parliamentary
+  transcripts (1887).}
+  Fourteen strategies in three families are compared:
+  \textbf{Filter} strategies restrict the candidate pool at query time using
+  a Boolean predicate on chunk metadata;
+  \textbf{Rerank} strategies re-score retrieved candidates by adding a signed
+  distance bonus before re-sorting;
+  \textbf{Hybrid} strategies combine both.
+  Chunking is held fixed at \texttt{10000\_hierarchical} throughout.
+  \textsuperscript{\dag}~Global control strategy (no filter, no rerank).
+} \label{tab:metadata-strategies} \\
+\toprule
+\rowcolor{headerblue}
+\textbf{Strategy ID} &
+\textbf{Family} &
+\textbf{Metadata field(s)} &
+\textbf{Predicate / scoring rule} &
+\textbf{Notes \& implementation} \\
+\midrule
+\endfirsthead
+% ── Continuation header ─────────────────────────────────────────────────────
+\multicolumn{5}{l}{\footnotesize\textit{Table~\ref{tab:metadata-strategies} continued from previous page}} \\
+\toprule
+\rowcolor{headerblue}
+\textbf{Strategy ID} &
+\textbf{Family} &
+\textbf{Metadata field(s)} &
+\textbf{Predicate / scoring rule} &
+\textbf{Notes \& implementation} \\
+\midrule
+\endhead
+% ── Intermediate-page footer ────────────────────────────────────────────────
+\midrule
+\multicolumn{5}{r}{\footnotesize\textit{Continued on next page}} \\
+\endfoot
+% ── Last-page footer ────────────────────────────────────────────────────────
+\bottomrule
+\multicolumn{5}{p{\linewidth}}{%
+  \footnotesize
+  \textbf{Notes.}
+  Filter predicates are applied as ChromaDB \texttt{where} clauses.
+  \textit{Rerank} bonuses ($\delta$) are added to cosine distance before
+  re-sorting (negative = promote, positive = demote).
+  All strategies operate on the \texttt{10000\_hierarchical} index of
+  \textit{Les Débats}; newspaper collections are unaffected.
+  Source code: \texttt{scripts/c4\_joint/c4\_common.py} (predicates) and
+  \texttt{scripts/retrieval\_utils.py} (rerank functions).
+} \\
+\endlastfoot
+
+%%── Baseline ──────────────────────────────────────────────────────────────
+\multicolumn{5}{l}{\textit{\textbf{Baseline — unconditional retrieval}}} \\[2pt]
+
+\rowcolor{groupA}
+\texttt{baseline}\textsuperscript{\dag}
+  & —
+  & —
+  & No filter applied; no distance adjustment; standard cosine-distance ranking.
+  & Global control. Identical to the plain Naive Retriever on the
+    \texttt{10000\_hierarchical} index. \\
+
+\midrule
+%%── Filter ────────────────────────────────────────────────────────────────
+\multicolumn{5}{l}{\textit{\textbf{Filter strategies — Boolean predicate on \texttt{doc\_type} / scalar fields}}} \\[2pt]
+
+\rowcolor{filterbg}
+\texttt{exclude\_noisy}
+  & Filter
+  & \texttt{doc\_type}
+  & \texttt{doc\_type \$nin [vote\_list, absence\_list, fragment, chamber\_header, scrutin, excuse, conge, compte\_rendu\_header, tirage\_sort]}
+  & Removes administrative and procedural noise chunks that rarely contain
+    substantive evidence. Best-performing filter across most routings;
+    selected by 5 clusters in inference. \\
+
+\rowcolor{filterbg}
+\texttt{debates\_only}
+  & Filter
+  & \texttt{doc\_type}
+  & \texttt{doc\_type = "debate"}
+  & Retains only chunks classified as formal debate transcripts.
+    More restrictive than \texttt{exclude\_noisy}; discards legal texts,
+    petitions, and session summaries that may carry relevant evidence. \\
+
+\rowcolor{filterbg}
+\texttt{debates\_and\_legal}
+  & Filter
+  & \texttt{doc\_type}
+  & \texttt{doc\_type \$in [debate, legal\_text, law\_presentation, law\_adoption, petition, sommaire]}
+  & Positive-type filter retaining all substantive document types.
+    Equivalent to \texttt{exclude\_noisy} for types with no overlap between
+    the two lists, but differs on \texttt{compte\_rendu\_header} and
+    \texttt{tirage\_sort}. \\
+
+\rowcolor{filterbg}
+\texttt{min\_speakers\_2}
+  & Filter
+  & \texttt{speaker\_count}
+  & \texttt{speaker\_count} $\geq 2$
+  & Retains only multi-speaker chunks, filtering monologues and
+    administrative passages. Targets interpellation-style exchanges
+    requiring at least a proposer and a respondent. \\
+
+\rowcolor{filterbg}
+\texttt{min\_length\_500}
+  & Filter
+  & \texttt{doc\_length}
+  & \texttt{doc\_length} $\geq 500$ (characters)
+  & Excludes very short chunks (header lines, brief procedural notices).
+    Proxies for substantive content length without reference to
+    semantic document type. \\
+
+\rowcolor{filterbg}
+\texttt{exclude\_noisy\allowbreak\_min\_length}
+  & Filter
+  & \texttt{doc\_type}, \texttt{doc\_length}
+  & \texttt{doc\_type \$nin} noisy types \textbf{AND} \texttt{doc\_length} $\geq 200$
+  & Combines the noisy-type exclusion with a minimum-length guard.
+    The lower 200-char threshold (vs.\ 500 in \texttt{min\_length\_500})
+    preserves short but structurally clean chunks (e.g.\ single-speaker
+    petitions). \\
+
+\midrule
+%%── Rerank ────────────────────────────────────────────────────────────────
+\multicolumn{5}{l}{\textit{\textbf{Rerank strategies — additive distance adjustment, no pre-filtering}}} \\[2pt]
+
+\rowcolor{rerankbg}
+\texttt{rerank\_type\_boost}
+  & Rerank
+  & \texttt{doc\_type}
+  & Boost types: $\delta = -\alpha_{t}$ ($\alpha_{t}{=}0.008$). \newline
+    Penalise types: $\delta = +\alpha_{t}$. \newline
+    All other types: $\delta = 0$.
+  & Soft version of \texttt{debates\_and\_legal}: substantive types are
+    promoted, noisy types demoted, but no document is hard-excluded.
+    Selected by 1 cluster at inference. \\
+
+\rowcolor{rerankbg}
+\texttt{rerank\_speaker\_boost}
+  & Rerank
+  & \texttt{speaker\_count}
+  & \texttt{speaker\_count} $\geq 2$: $\delta = -\alpha_{s}$ ($\alpha_{s}{=}0.006$). \newline
+    \texttt{speaker\_count} $= 0$: $\delta = +\alpha_{s}/2$. \newline
+    Otherwise: $\delta = 0$.
+  & Promotes multi-speaker debates; mildly demotes chunks with no
+    identified speaker. \\
+
+\rowcolor{rerankbg}
+\texttt{rerank\_combined}
+  & Rerank
+  & \texttt{doc\_type}, \texttt{speaker\_count}
+  & Type component: same as \texttt{rerank\_type\_boost} with $\alpha_{t}{=}0.006$. \newline
+    Speaker component: same as \texttt{rerank\_speaker\_boost} with $\alpha_{s}{=}0.004$. \newline
+    $\delta = \delta_{\text{type}} + \delta_{\text{spk}}$.
+  & Additive combination of both signals; lower individual $\alpha$ values
+    reduce the risk of over-promotion when both bonuses apply. \\
+
+\midrule
+%%── Hybrid ────────────────────────────────────────────────────────────────
+\multicolumn{5}{l}{\textit{\textbf{Hybrid strategies — Boolean filter + rerank}}} \\[2pt]
+
+\rowcolor{groupD}
+\texttt{excl\_noisy\allowbreak+spk}
+  & Hybrid
+  & \texttt{doc\_type}, \texttt{speaker\_count}
+  & Filter: \texttt{doc\_type \$nin} noisy types. \newline
+    Rerank: \texttt{rerank\_speaker\_boost} ($\alpha_{s}{=}0.006$).
+  & Excludes administrative noise first, then promotes multi-speaker
+    chunks within the filtered pool. Targets debates where substantive
+    exchange quality matters. \\
+
+\rowcolor{groupD}
+\texttt{deb+legal\allowbreak+spk}
+  & Hybrid
+  & \texttt{doc\_type}, \texttt{speaker\_count}
+  & Filter: \texttt{doc\_type \$in} debate/legal types. \newline
+    Rerank: \texttt{rerank\_speaker\_boost} ($\alpha_{s}{=}0.006$).
+  & Positive-type filter retaining only substantive types, then
+    speaker-boost reranking within the filtered set. \\
+
+\rowcolor{groupD}
+\texttt{deb+legal\allowbreak+cmb}
+  & Hybrid
+  & \texttt{doc\_type}, \texttt{speaker\_count}
+  & Filter: \texttt{doc\_type \$in} debate/legal types. \newline
+    Rerank: \texttt{rerank\_combined} ($\alpha_{t}{=}0.006$, $\alpha_{s}{=}0.004$).
+  & Same positive-type filter as above with the combined reranker;
+    both type and speaker signals applied after filtering. \\
+
+\rowcolor{groupD}
+\texttt{triple\allowbreak+cmb}
+  & Hybrid
+  & \texttt{doc\_type}, \texttt{speaker\_count}, \texttt{doc\_length}
+  & Filter: \texttt{doc\_type \$in} debate/legal types \textbf{AND} \texttt{speaker\_count} $\geq 2$ \textbf{AND} \texttt{doc\_length} $\geq 200$. \newline
+    Rerank: \texttt{rerank\_combined} ($\alpha_{t}{=}0.006$, $\alpha_{s}{=}0.004$).
+  & Most restrictive strategy: three simultaneous field constraints plus
+    combined reranking. Trades recall for high-precision substantive
+    multi-speaker chunks. \\
+
+\end{longtable}
+\twocolumn
+
+\clearpage

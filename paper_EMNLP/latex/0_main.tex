@@ -1,0 +1,425 @@
+
+\documentclass[11pt]{article}
+
+
+% Added packages and definitions
+\usepackage{algorithm}
+\usepackage{algpseudocode}  % from the algorithmicx bundle
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{makecell}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning, fit, backgrounds}
+
+\usepackage{ulem}              % for \uline
+\normalem                      % keeps \emph italic, not underlined
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\z}[1]{{\footnotesize\textcolor{gray!70!black}{#1}}}
+% \usepackage{xcolor}          % only if not already loaded
+
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{adjustbox}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{rotating}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{enumitem}
+% added definitions
+\definecolor{sectiongray}{gray}{0.95}
+% Colors for task-conditioned indexing appendix tables (A_chunking_strats, B_clustering_eval)
+\definecolor{headerblue}{RGB}{199,218,255}
+\definecolor{groupA}{RGB}{240,245,255}
+\definecolor{groupB}{RGB}{232,245,232}
+\definecolor{groupC}{RGB}{255,242,224}
+\definecolor{groupD}{RGB}{245,237,255}
+% Cluster delta shading: white-to-blue gradient (greyscale-safe)
+\definecolor{db1}{RGB}{210,228,252}
+\definecolor{db2}{RGB}{107,174,214}
+\definecolor{db3}{RGB}{33,113,181}
+\definecolor{db3text}{RGB}{255,255,255}
+% Badge/row colors
+\definecolor{filterbg}{HTML}{E6F1FB}
+\definecolor{filtertext}{HTML}{185FA5}
+\definecolor{rerankbg}{HTML}{EEEDFE}
+\definecolor{reranktext}{HTML}{534AB7}
+\definecolor{rowalt}{HTML}{F8F8F8}
+\definecolor{db0}{RGB}{255,255,255}
+% Visible TODO marker for draft (remove before submission)
+\newcommand{\todo}[1]{%
+  \par\smallskip\noindent
+  \colorbox{yellow}{%
+    \parbox{0.9\linewidth}{%
+      \textbf{\textcolor{red}{\small TODO:}}~{\small\textit{#1}}%
+    }%
+  }\par\smallskip}
+% Convenience macros
+\newcommand{\filterbadge}{\colorbox{filterbg}{\textcolor{filtertext}{\footnotesize\texttt{filter}}}}
+\newcommand{\rerankbadge}{\colorbox{rerankbg}{\textcolor{reranktext}{\footnotesize\texttt{rerank}}}}
+\newcommand{\baseline}[1]{\textit{\textcolor{gray}{#1}}}
+\newcommand{\best}[1]{\textbf{#1}}
+
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+
+
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{ORDER: Task-Conditioned Routing for Retrieval-Augmented Generation}
+% \normalsize(signification de l'acronyme : Optimal Routing for Dynamic Evidence Retrieval)}
+%Task-Conditioned Retrieval for Historical Question Answering: Beyond One-Size-Fits-All RAG
+
+% Author information can be set in various styles:
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a separate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+\author{First Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\\And
+  Second Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\}
+
+%\author{
+%  \textbf{First Author\textsuperscript{1}},
+%  \textbf{Second Author\textsuperscript{1,2}},
+%  \textbf{Third T. Author\textsuperscript{1}},
+%  \textbf{Fourth Author\textsuperscript{1}},
+%\\
+%  \textbf{Fifth Author\textsuperscript{1,2}},
+%  \textbf{Sixth Author\textsuperscript{1}},
+%  \textbf{Seventh Author\textsuperscript{1}},
+%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
+%\\
+%  \textbf{Ninth Author\textsuperscript{1}},
+%  \textbf{Tenth Author\textsuperscript{1}},
+%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
+%  \textbf{Twelfth Author\textsuperscript{1}},
+%\\
+%  \textbf{Thirteenth Author\textsuperscript{3}},
+%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
+%  \textbf{Fifteenth Author\textsuperscript{1}},
+%  \textbf{Sixteenth Author\textsuperscript{1}},
+%\\
+%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
+%  \textbf{Eighteenth Author\textsuperscript{3,4}},
+%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
+%  \textbf{Twentieth Author\textsuperscript{1}}
+%\\
+%\\
+%  \textsuperscript{1}Affiliation 1,
+%  \textsuperscript{2}Affiliation 2,
+%  \textsuperscript{3}Affiliation 3,
+%  \textsuperscript{4}Affiliation 4,
+%  \textsuperscript{5}Affiliation 5
+%\\
+%  \small{
+%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
+%  }
+%}
+
+\begin{document}
+
+
+
+\maketitle
+% \begin{abstract}
+% Retrieval-Augmented Generation has become a standard tool for adapting
+% large language models to specialised corpora, but standard pipelines assume
+% a single, globally optimal indexing and retrieval configuration fixed at
+% preprocessing time. We argue that this one-size-fits-all assumption breaks
+% down in domain-expert settings, where heterogeneous queries demand
+% different segmentation granularities, metadata filters, and source-selection
+% mechanisms and that the optimisation must therefore be split between an
+% offline axis conditioned on the document and an online axis conditioned on
+% the query. We instantiate this principle with three components. An offline
+% stage discovers semantic question clusters and learns, per cluster, both
+% the best chunking strategy and the best metadata filter or reranker; at
+% inference, each query is routed via nearest-centroid assignment to the
+% corresponding pre-built index at negligible online cost. On the retrieval
+% side, a supervised query router (QRe) predicts which collections contain
+% the evidence for a question, and combines with a uniform multi-source
+% retriever that allocates the budget evenly across active sources.
+% Experiments on heterogeneous historical archives show that conditioning
+% indexing and retrieval on the query, rather than fixing them globally,
+% yields consistent gains over both naive and state-of-the-art baseline.
+% \end{abstract}
+
+% \begin{abstract}
+% Retrieval-Augmented Generation has become a standard tool for combining the reasonning capabilities of large language models with external knwoledge, enabling expert systems
+% over heterogeneous document collections. However, deploying RAG in
+% domain-expert settings remains challenging because standard pipelines
+% commit to a single, globally optimal indexing and retrieval configuration
+% at preprocessing time. This one-size-fits-all assumption breaks down when
+% heterogeneous queries demand different segmentation granularities,
+% metadata filters, and source-selection mechanisms: a configuration
+% optimal for one query family is suboptimal for another. 
+
+% A practical
+% solution must therefore decouple optimisation along two axes, an offline
+% axis conditioned on the document and an online axis conditioned on the
+% query, while keeping inference-time overhead negligible requirements not
+% met by prior work. 
+
+% In this paper, we make a step forward by introducing
+% a query-conditioned RAG framework that adapts both indexing and retrieval
+% to the question at hand. Offline, our method discovers semantic question
+% clusters and learns, per cluster, both the best chunking strategy and the
+% best metadata filter or reranker; at inference, each query is routed via
+% nearest-centroid assignment to the corresponding pre-built index. On the
+% retrieval side, a supervised query router (QRe) predicts which collections
+% contain the evidence for a question and combines with a uniform
+% multi-source retriever that allocates the budget evenly across active
+% sources. Experiments on heterogeneous historical archives show that
+% conditioning indexing and retrieval on the query, rather than fixing them
+% globally, yields consistent gains over both naive and state-of-the-art
+% baselines.
+% \end{abstract}
+
+\begin{abstract}
+Retrieval-Augmented Generation (RAG) pipelines typically rely on a fixed indexing and retrieval configuration determined at preprocessing time. This one-size-fits-all design is ill-suited to domain-expert settings, where heterogeneous queries require different chunking granularities, metadata constraints, and source-selection strategies. As a result, configurations that are effective for one class of queries often perform poorly for others.
+We introduce ORDER (Optimal Routing for Dynamic Evidence Retrieval) : a query-conditioned RAG framework that jointly adapts indexing and retrieval to the incoming query. Our approach first discovers semantic clusters of questions and learns, for each cluster, the optimal chunking strategy together with the most effective metadata filtering and reranking configuration. At inference time, queries are routed to the appropriate pre-built index through nearest-centroid assignment.
+To further improve retrieval, we propose a supervised query router (QRe) that predicts which collections are most likely to contain relevant evidence, coupled with a Uniform Multi-source Sampler (UMS) that allocates the retrieval budget evenly across the selected sources.
+We evaluate our framework on large-scale, heterogeneous historical archives and show that conditioning both indexing and retrieval on the query consistently outperforms both naive baselines and strong state-of-the-art RAG systems. Our results demonstrate that adaptive, query-aware retrieval pipelines provide a more effective alternative to globally fixed RAG configurations in complex expert-domain environments. Full implementation details are available in the code repository.\footnote{Code available at \href{https://github.com/atomegoyan/debattre-generate-questions.git}{GitHub}.}
+
+\end{abstract}
+
+
+% \begin{figure*}[t]
+%   \centering
+%   %\hspace{-2.3cm}
+%   \includegraphics[width=1\textwidth]{images/OFFLINE_ discover menu _chunk _ meta _ src_ _ ONLINE_ query flips 3 switches.png}
+%   \caption{Overview of ORDER. Offline (left, blue): three indices are pre-built per question cluster via task-
+% conditioned chunking and metadata selection. Online (right, orange): an incoming query is embedded
+% once, projected into the cluster space, and routed to (i) its per-cluster optimal index, (ii) its classifier-
+% predicted active source set, (iii) a uniform per-source allocation. Online cost is one embedding + one
+% nearest-centroid lookup + one logistic classifier evaluation. }
+%   \label{fig:teaser}
+% \end{figure*}
+
+
+\input{1_introduction}
+
+
+\input{2_related_work}
+
+
+\input{3_dataset}
+
+\input{latex/4_methodology}
+
+% \begin{figure*}[t]
+%   \centering
+%   %\hspace{-2.3cm}
+%   \includegraphics[width=1\textwidth]{images/header_2.png}
+%   \caption{TO DO}
+%   \label{fig:teaser}
+% \end{figure*}
+
+\input{5_retrieval_results}
+
+
+%% TODO: add \section{Answer Generation} fragment (6_answer_generation.tex)
+%%   covering prompt design, LLM used, generation evaluation metrics.
+
+
+%% TODO: add \section{Discussion} fragment if needed (error analysis,
+%%   limitations of oracle indexing, historical corpus caveats).
+\section{Conclusion}
+
+We have argued and empirically supported that retrieval in
+domain-specific RAG admits \emph{no one-size-fits-all} indexing or
+retrieval strategy, and that the optimisation should be split across an
+offline document-conditioned axis (index construction, strategy
+discovery) and an online query-conditioned axis (routing). On a
+historical-press benchmark built from \textit{Les Débats} and a
+companion newspaper, three mechanisms instantiate this position:
+(i) query-conditioned chunking, (ii) query-conditioned metadata
+strategies, and (iii) a learned multi-source query-rerouting classifier
+together with a uniform multi-source retriever (UMS). Each mechanism
+yields measurable gains over a global baseline, and the largest lifts
+arise when task-conditioned indexing is paired with the weakest
+retrieval routing (Naive), with smaller but consistent gains under QRe
+and UMS. Crucially, the online cost of routing one projection and a
+nearest-centroid lookup, or a single classifier call is negligible
+compared to the offline cost of index construction, making the approach
+practical for real-world deployment in heterogeneous historical
+corpora.
+
+\section*{Limitations}
+
+\paragraph{Corpus and temporal scope.} Our benchmark is built from a
+narrow slice of late-19th-century French parliamentary debates and one
+companion newspaper. The cluster structure, the optimal per-cluster
+strategies, and the source-imbalance patterns we observe are likely to
+shift on other periods, languages, or document genres. We do not claim
+that the specific strategy maps transfer; we claim only that the
+\emph{methodology} of task-conditioning is corpus-agnostic.
+
+\paragraph{Oracle indexing is not yet end-to-end.} The per-cluster
+strategy maps are learned offline using gold retrieval signals on a
+training split, and transferred via nearest-centroid assignment. We do
+not evaluate fully online strategy \emph{discovery} (e.g.\ on a stream
+of unseen query distributions), nor do we close the loop with answer
+quality: all reported gains are on retrieval metrics (Coverage@$k$ and
+Recall@$k$), not on downstream answer faithfulness or factuality.
+
+\paragraph{Answer generation is out of scope.} We focus exclusively on
+the retrieval stage. The generation step, prompt design, choice of
+LLM, hallucination control, and citation grounding, is not evaluated
+here. Retrieval gains do not mechanically translate into answer-quality
+gains, and the interaction between task-conditioned retrieval and
+modern long-context LLMs deserves a dedicated study.
+
+\paragraph{Small training set for the routing classifier.} The QRe
+classifier and the cluster centroids are estimated from a few hundred
+annotated questions. Despite cross-validation and held-out evaluation,
+the routing decisions remain sensitive to annotator subjectivity and to
+the granularity of the question typology, especially for under-represented
+clusters.
+
+\paragraph{Statistical claims.} Reported deltas (in pp) are averaged
+over 5 random seeds on a 50/50 train/test split ($n_{\text{total}}{=}875$,
+$n_{\text{test}}{=}438$ per seed). Significance is assessed with a
+Bonferroni-corrected paired $t$-test across seeds; we report
+$^{***}p{<}0.001$, $^{**}p{<}0.01$, $^{*}p{<}0.05$, and~ns for
+non-significant differences. Differences flagged ns should be
+interpreted as suggestive rather than conclusive.
+
+\section*{Ethical Considerations}
+
+\paragraph{Source material.} All primary sources are public-domain
+historical newspapers and parliamentary records, digitised by national
+heritage institutions. No personal data of living individuals is
+involved. Quoted speakers are 19th-century public figures acting in
+their official capacity, and we have not augmented the corpus with any
+private or unpublished material.
+
+\paragraph{Historical bias.} The corpus reflects the political,
+gendered, and colonial biases of late-19th-century French public
+discourse. A RAG system built on it will faithfully reproduce and may
+amplify those biases if used uncritically (e.g.\ as a question-answering
+oracle for non-expert audiences). Our intended use is to support
+\emph{expert historical research}, where such biases are themselves an
+object of study, not to provide neutral factual answers to lay users.
+
+\paragraph{Annotation.} Question clusters and gold passages were
+annotated by domain experts compensated at fair institutional rates. No
+crowdsourcing platform was used. Annotators were informed of the
+research purpose and consented to the use of their annotations.
+
+\paragraph{Compute and environmental cost.} Index construction for the
+14 chunking $\times$ 14 metadata grid is a one-off offline cost
+dominated by embedding computation. We report no model training beyond
+a small logistic-regression routing classifier; no large model was
+fine-tuned for this work. The online routing cost is negligible.
+
+\paragraph{Dual use.} The methodology is designed for historical
+information retrieval. We do not foresee a direct dual-use risk;
+however, task-conditioned retrieval could in principle be applied to
+politically sensitive contemporary corpora to bias which sources are
+surfaced for which queries. We caution against deploying per-cluster
+strategy maps without an audit of the resulting source-coverage
+distribution.
+
+\section*{Acknowledgments}
+%% TODO: add real acknowledgments
+% \todo{Write Acknowledgments --- funding, data providers, annotators.}
+
+
+
+
+
+
+% Custom bibliography entries only
+\bibliography{custom}
+
+\clearpage
+
+\appendix
+
+\section{Chunking Strategy Details}
+\label{sec:appendix-chunking}
+\input{A_chunking_strats}
+
+\section{Extended Indexing Evaluation}
+\label{sec:appendix-clustering-eval}
+\input{B_clustering_eval}
+
+\section{Per-Cluster Qualitative Analysis}
+\label{sec:appendix-cluster-findings}
+\input{C_cluster_findings}
+
+\section{Query-Routing Classifier Details}
+\label{sec:appendix-classifier}
+\input{D_classifier_details}
+
+\section{Metadata Strategy Details}
+\label{sec:appendix-metadata}
+\input{E_metadata_strats}
+
+\section{Dataset Details}
+\label{sec:appendix-dataset}
+\input{F_dataset_details}
+
+\section{Metrics: Formal Definitions}
+\label{sec:appendix-metrics}
+\input{G_metrics}
+
+\end{document}

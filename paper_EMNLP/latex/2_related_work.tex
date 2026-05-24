@@ -1,0 +1,67 @@
+% ============================================================
+%  Related Work — \input{2_related_work} in main paper
+% ============================================================
+
+\section{Related Work}
+\label{sec:related-work}
+
+\paragraph{RAG over long context.}
+Retrieval-Augmented Generation~\cite{rag_2020} is an efficient way to extend
+LLM reasoning to out-of-distribution data, but its performance degrades in
+long-context settings: recall slows as context grows and accuracy can
+actively decrease, suggesting a return of hallucination~\cite{leng_long_2024}. Graph-based RAG methods address this through richer offline indexing.
+HippoRAG~2~\cite{hipporagv2} combines knowledge-graph triples with raw passages in a unified index and uses an LLM-driven recognition step plus Personalized PageRank to surface
+relevant evidence; it improves on earlier structured architectures such as
+LightRAG~\cite{lightrag} and GraphRAG~\cite{graphrag_2024}, but its heavy
+LLM-driven indexing complicates incremental deployment, and chunking remains
+a fixed-size, query-agnostic preprocessing step. These methods are also token-intensive, especially during graph construction. LinearRAG~\cite{linearrag_2025} has been proposed to reduce time and token consumption by scaling linearly with graph size, and shows that graph-based RAG often introduces relational noise that hurts generation. Closer to our work, Adaptive-RAG~\cite{adaptive_rag_2024} routes
+queries to retrieval strategies of varying complexity based on predicted
+question difficulty.
+Our query-routing contribution extends this intuition to the
+\emph{multi-source} setting, conditioning retrieval on predicted source
+relevance rather than complexity.
+
+\paragraph{Multi-hop question answering.}
+Multi-hop QA requires aggregating evidence from multiple documents.
+Benchmarks such as HotpotQA~\cite{hotpotqa_2018} and
+MuSiQue~\cite{musique_2022} have driven significant progress, but they rely
+on clean modern text and assume evidence resides within a single,
+homogeneous corpus.
+Historical QA introduces compounding difficulties: OCR noise, temporal and
+orthographic drift, and the need to bridge
+\emph{heterogeneous} source types whose retrieval dynamics differ
+substantially.
+Standard multi-hop benchmarks provide no guidance for this cross-corpus
+setting.
+
+
+% Là tu parles de sources parlementaires, mais on en parle pas du tout avant donc je remplacerais par 
+
+\paragraph{RAG for historical archives.}
+Recent work highlights how OCR noise, orthographic
+variation, and semantic drift limit standard retrieval pipelines.
+\citet{Mudet_Bakkali_2025} stabilise recall on noisy historical corpora via
+semantic query expansion and Reciprocal Rank Fusion, but their evaluation
+is restricted to documents of at most 512 tokens and to a single source
+type --- leaving the cross-source, long-context regime of historical
+archives largely unexplored.
+
+% Il faudrait ajouter des référebces pour "Recent work", non ?
+% Pour moi : soit tu ajoutes des références, soit tu fusionnes avec la première section ("RAG et contexte long")
+
+%\paragraph{RAG and history.}
+%Recent work highlights how OCR noise, orthographic variation, and semantic drift limit standard retrieval pipelines. \citet{Mudet_Bakkali_2025} stabilise recall on noisy historical corpora via semantic query expansion and Reciprocal Rank Fusion, but their evaluation is restricted to documents of at most 512 tokens and to a single source type -- leaving the cross-source, long-context regime of parliamentary archives largely unexplored.
+
+
+\paragraph{Segmentation in RAG.}
+Segmentation is the first step of RAG indexing and has a direct effect on
+retrieval quality.
+Classical fixed-size segmentation makes a one-size-fits-all assumption;
+recursive and LLM-guided alternatives have been
+proposed~\cite{chromadb_chunking_2024}.
+\citet{hope_2025} introduce a domain-agnostic framework for evaluating
+chunking strategies and show that semantic independence between passages is
+the most consequential factor for downstream performance.
+Recent works have highlighted the importance of moving away from the one-size-fits-all hypothesis and have studied the importance of adapting the chunking method to the domain of study~\cite{reconstructingcontextevaluatingadvanced,mocmixturestextchunking}.
+Following those ideas, approaches have used document-specific chunking optimisation research showing how document-specific chunking optimisation can improve RAG results~\cite{adaptive_chunking}. These approaches still treat the chunking phase and the query phase as independent, focusing on off-line optimisation. We argue that domain experts pose heterogeneous questions, and that the optimal segmentation depends both on the document and on the query.
+Segmentation should therefore be treated as a query-conditioned parameter, jointly optimised with retrieval, rather than as a fixed pre-processing choice.

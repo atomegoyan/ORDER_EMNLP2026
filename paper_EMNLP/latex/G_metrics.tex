@@ -1,0 +1,117 @@
+% ============================================================
+%  Appendix G — Metrics: Formal Definitions
+%  \input{G_metrics} via 0_main.tex
+% ============================================================
+
+This appendix gives the formal definitions of the two retrieval
+metrics used throughout the paper (summarised in
+Section~\ref{sec:metrics}). Throughout, $\mathcal{Q}$ is the
+evaluation set of multi-hop questions, $L_q^s$ is the ranked list of
+documents retrieved for question $q$ under strategy $s$,
+$L_q^{(1:k)}$ its top-$k$ prefix, and $G_q$ the set of gold documents
+for $q$ with $|G_q|{=}2$.
+
+\subsection{Recall@$k$}
+\label{sec:appendix-metrics-recall}
+
+Under strategy $s$, the gold evidence for question $q$ is the pair of
+chunk IDs $(g_1^s, g_2^s)$ pre-identified in $s$'s index. A gold chunk
+is found iff its exact ID appears in the top-$k$ list. The metric is
+the macro-average over $\mathcal{Q}$:
+\begin{equation}
+\label{eq:recall}
+\text{Recall@}k \;=\; \frac{1}{|\mathcal{Q}|}\sum_{q \in \mathcal{Q}}
+\frac{\bigl|\{\,i \,:\, g_i^s \in L_q^{(1:k)}\,\}\bigr|}{2}.
+\end{equation}
+Per-question scores take values in $\{0,\, 0.5,\, 1\}$ corresponding
+to zero, one, or both gold chunks found. Because the gold pair
+$(g_1^s, g_2^s)$ is re-identified \emph{per strategy} in that
+strategy's index, Recall@$k$ is comparable across strategies only at
+the metric level, not at the chunk-ID level.
+
+\subsection{Coverage@$k$}
+\label{sec:appendix-metrics-coverage}
+
+Coverage is text-based and handles the granularity asymmetry that
+Recall does not. Let $t_g$ denote the text of gold document $g$
+(looked up by ID from $s$'s index), and let
+$R_q^{s,g} \subseteq L_q^{(1:k)}$ be the subset of retrieved chunks
+that originate from the same source as $g$. The per-gold-document
+score is
+\begin{equation}
+\label{eq:sigma}
+\sigma(g, R) \;=\;
+\begin{cases}
+1 & \exists\,d \in R:\; t_g \subseteq d, \\[6pt]
+\dfrac{\displaystyle\sum_{d \in R}\mathbf{1}[\,d \subseteq t_g\,]\cdot|d|}{|t_g|}
+  & \exists\,d \in R:\; d \subseteq t_g, \\[10pt]
+0 & \text{otherwise,}
+\end{cases}
+\end{equation}
+where $|\cdot|$ is character length. Case~1 (\emph{full containment})
+fires when a single retrieved chunk fully encloses the gold text and
+yields $\sigma{=}1$; Case~2 (\emph{partial coverage}) accumulates the
+character-level fraction of $t_g$ covered by retrieved sub-strings
+from the same source. Coverage@$k$ is the macro-average of $\sigma$
+over gold documents and questions:
+\begin{equation}
+\label{eq:coverage}
+\text{Coverage@}k \;=\; \frac{1}{|\mathcal{Q}|}\sum_{q \in \mathcal{Q}}
+\frac{1}{2}\sum_{g \in G_q} \sigma\!\bigl(g,\, R_q^{s,g}\bigr).
+\end{equation}
+
+\subsection{Conventions and Edge Cases}
+\label{sec:appendix-metrics-edge}
+
+\paragraph{Case priority.} The cases in Eq.~\ref{eq:sigma} are checked
+in order: a retrieved chunk that fully contains $t_g$ satisfies
+Case~1 and short-circuits the evaluation; Case~2 is only entered if
+no such chunk exists in $R$. This avoids double-counting when $R$
+contains both a containing chunk and additional contained chunks.
+
+\paragraph{Source restriction.} $R$ is restricted to chunks from the
+same source as $g$. Retrieved chunks from other sources never
+contribute to $\sigma(g, R)$, even if they happen to share
+substrings with $t_g$. This is what makes Coverage@$k$ a per-source
+quantity that is correctly aggregated across the three corpora.
+
+\paragraph{Overlapping sub-chunks.} The Case~2 sum
+$\sum_{d}\mathbf{1}[d \subseteq t_g]\cdot|d|$ does not deduplicate
+overlapping retrieved sub-chunks. In practice this is a non-issue
+because $R$ is bounded by $k$ and the strategies we evaluate produce
+disjoint chunks. A strategy that returned overlapping sub-chunks of
+$t_g$ could in principle obtain $\sigma > 1$; we cap $\sigma$ at $1$
+in implementation.
+
+\paragraph{Empty $R$ and missing $g$.} If $R$ is empty (no chunks
+from $g$'s source in the top-$k$), $\sigma(g, R) = 0$ by the
+\emph{otherwise} case. If $g$'s text cannot be recovered from $s$'s
+index (e.g.\ a malformed entry), the question is dropped from the
+per-strategy average; this affected zero questions in our experiments.
+
+\subsection{Worked Example}
+\label{sec:appendix-metrics-example}
+
+Consider a question $q$ with gold pair $(g_1, g_2)$ where
+$|t_{g_1}|{=}400$ and $|t_{g_2}|{=}800$ characters, and suppose the
+top-3 retrieved list under strategy $s$ contains, in order: (i)~a
+$10{,}000$-character \textit{Les D\'ebats} chunk that fully encloses
+$t_{g_1}$; (ii)~a $200$-character \textit{Les D\'ebats} sub-chunk
+contained in $t_{g_2}$; and (iii)~an unrelated newspaper chunk. Then
+$R_q^{s, g_1} = \{\text{(i)}\}$ and $R_q^{s, g_2} = \{\text{(ii)}\}$;
+chunk (iii) belongs to a different source and contributes to neither.
+
+\begin{itemize}[leftmargin=1.2em,itemsep=0.15em,topsep=0.2em]
+  \item \textbf{Recall@3:} $g_1$'s ID under $s$ is found (chunk
+  (i)~\emph{is} $t_{g_1}$'s containing chunk and carries that ID);
+  $g_2$'s ID is not found (chunk (ii) is a sub-chunk with its own
+  ID). Per-question Recall@3 $= 1/2 = 0.5$.
+  \item \textbf{Coverage@3:} $\sigma(g_1, R_q^{s, g_1}) = 1$
+  (Case~1), $\sigma(g_2, R_q^{s, g_2}) = 200/800 = 0.25$ (Case~2).
+  Per-question Coverage@3 $= (1 + 0.25)/2 = 0.625$.
+\end{itemize}
+
+This illustrates the two regimes called out in
+Section~\ref{sec:metrics}: under coarse chunking Coverage is more
+lenient than Recall (it credits the containment of $t_{g_1}$ that an
+ID match also rewards), and under fine chunking Coverag
