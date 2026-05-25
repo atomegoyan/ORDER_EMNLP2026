@@ -1,0 +1,110 @@
+% ============================================================
+%  Appendix I  Joint TC-Chunking x TC-Metadata indexing
+%  \input{I_joint_analysis} in main paper
+% ============================================================
+
+\section{Joint TC-Chunking $\times$ TC-Metadata Indexing}
+\label{sec:appendix-joint}
+
+For completeness we report the joint optimisation of the two index-side
+axes (chunking and metadata) that was excluded from the main results
+because it does not strictly improve on the single-axis TC-Metadata
+variant under any retriever. We describe the setup, the held-out
+numbers, and the structural reasons for the non-significance.
+
+\paragraph{Methodology.} The strategy set is the Cartesian product
+$\mathcal{S} = \mathcal{S}_{\text{chunk}} \times \mathcal{S}_{\text{meta}}$
+of size $14 \times 14 = 196$. For each pair $(c, m) \in \mathcal{S}$ the
+\textit{Les Débats} index is the $c$-chunked collection re-queried
+under the metadata predicate or reranker $m$; newspaper retrieval is
+left at the global default. Inference follows the shared protocol of
+Section~\ref{sec:indexing-methodology}, with the only change that each
+cluster stores a \emph{pair} $s^{*}(c) = (c^{*}, m^{*})$ rather than a
+single index choice.
+Table~\ref{tab:joint-wins-summary}.
+
+\paragraph{Held-out results.}
+Table~\ref{tab:tc-joint-vs-metadata} reports the joint variant
+side-by-side with TC-Metadata on the held-out test set
+($n_{\text{test}}{=}438$, 5 seeds). Under the Naive Retriever the joint
+pair adds $+8.8$~\% points Coverage@3 and $+8.6$~\% points Recall@3
+($p<0.05$), marginally below TC-Metadata ($+8.9$ / $+9.0$~\% points).
+Under UMS the gains are $+6.0$~\% points Cov@3 / $+6.0$~\% points Rec@3
+($p<0.05$), matching TC-Metadata to within a tenth of a point. QRe and
+QRe\,\&\,UMS show no significant improvement under either indexing
+variant (ns). The joint variant therefore never strictly dominates
+TC-Metadata.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.1}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{ll cc cc}
+\toprule
+\textbf{Retriever} & \textbf{Indexing strategy}
+  & \multicolumn{2}{c}{\textbf{Coverage (\%)}}
+  & \multicolumn{2}{c}{\textbf{Recall (\%)}} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+ & & @3 & @5 & @3 & @5 \\
+\midrule
+\multirow{3}{*}{Naive}
+  & Global Baseline      & 36.9 & 45.4 & 36.9 & 45.6 \\
+  & \;+\,TC-Metadata     & 45.8$^{*}$  & 55.2$^{*}$  & 45.9$^{*}$   & 55.3$^{*}$ \\
+  & \;+\,TC-Joint        & 45.7$^{*}$  & 54.7$^{*}$  & 45.5$^{**}$  & 54.5$^{*}$ \\
+\midrule
+\multirow{3}{*}{QRe}
+  & Global Baseline      & 48.5 & 58.2 & 48.7 & 58.4 \\
+  & \;+\,TC-Metadata     & 48.5$^{\text{ns}}$ & 58.2$^{\text{ns}}$ & 48.7$^{\text{ns}}$ & 58.4$^{\text{ns}}$ \\
+  & \;+\,TC-Joint        & 48.3$^{\text{ns}}$ & 57.6$^{\text{ns}}$ & 48.2$^{\text{ns}}$ & 57.4$^{\text{ns}}$ \\
+\midrule
+\multirow{3}{*}{UMS}
+  & Global Baseline      & 46.8 & 58.7 & 47.0 & 58.8 \\
+  & \;+\,TC-Metadata     & 52.8$^{*}$ & 63.2$^{*}$ & 53.0$^{*}$ & 63.4$^{*}$ \\
+  & \;+\,TC-Joint        & 52.8$^{*}$ & 63.1$^{*}$ & 53.0$^{*}$ & 63.4$^{*}$ \\
+\midrule
+\multirow{3}{*}{QRe \& UMS}
+  & Global Baseline      & 54.7 & 64.5 & 54.9 & 64.7 \\
+  & \;+\,TC-Metadata     & 54.7$^{\text{ns}}$ & 64.5$^{\text{ns}}$ & 54.9$^{\text{ns}}$ & 64.7$^{\text{ns}}$ \\
+  & \;+\,TC-Joint        & 54.7$^{\text{ns}}$ & 64.5$^{\text{ns}}$ & 54.9$^{\text{ns}}$ & 64.7$^{\text{ns}}$ \\
+\bottomrule
+\end{tabular}
+}
+\caption{Joint chunking$\times$metadata variant compared to the
+single-axis TC-Metadata variant on the held-out test set
+($n_{\text{test}}{=}438$, 5 seeds). Each test question is routed to
+its nearest question cluster, and the chunking and metadata strategies
+used to retrieve its chunks are those found optimal for that cluster
+on the training split. Under \textit{+\,TC-Metadata}, the cluster
+picks its best metadata configuration (out of 14, chunking fixed at
+\texttt{10000\_hier.}); under \textit{+\,TC-Joint}, the cluster picks
+its best (chunking, metadata) pair jointly from the full
+$14{\times}14{=}196$-pair grid. Both variants are therefore
+per-cluster, i.e.\ effectively per-question.
+$^{*}p<0.05$, $^{**}p<0.01$ (Bonferroni paired $t$-test);
+ns = not significant.}
+\label{tab:tc-joint-vs-metadata}
+\end{table}
+
+\paragraph{Why the joint variant does not improve on TC-Metadata.}
+Two effects combine to flatten the joint gain.
+\textbf{(i) Winner's curse over a 196-pair grid.} The cluster-level
+selector picks the best pair on the training split out of 196
+candidates rather than 14, so the selection variance grows roughly with
+$\log(|\mathcal{S}|)$ at fixed training-cluster size. With $\sim$20
+training clusters and 5 test seeds, the inflated train-time pair score
+does not transfer fully to held-out questions, eroding any
+configuration-level advantage the joint search might have had.
+\textbf{(ii) Correlated gain channels.} Chunking and metadata strategies
+on \textit{Les Débats} both operate on the same failure mode:
+suppressing the parliamentary noise that crowds out the top-$k$
+(short \texttt{fragment} / \texttt{vote\_list} chunks for chunking;
+\texttt{exclude\_noisy} predicates and type-boost rerankers for
+metadata). Once either axis has filtered or down-weighted those chunks,
+the marginal contribution of the other axis on the same questions is
+near zero, so the joint pair recovers the TC-Metadata gain rather than
+stacking on top of it. The two effects together are consistent with the
+empirical pattern, joint matches TC-Metadata where TC-Metadata helps
+(Naive, UMS), and stays at noise level where TC-Metadata is already
+neutral (QRe, QRe\,\&\,UMS).

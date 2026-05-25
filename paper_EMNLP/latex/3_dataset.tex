@@ -27,7 +27,7 @@
 %     in the press.
 %   \item \emph{Cross-source multi-hop reasoning.} 314 questions require
 %     both gold passages from the newspapers and 571 require at least one
-%     newspaper and one parliamentary passage --- a structure that plain
+%     newspaper and one parliamentary passage  - a structure that plain
 %     top-$k$ cosine ranking cannot guarantee, since the dominant corpus
 %     may consume all slots.
 % \end{itemize}
@@ -40,29 +40,30 @@
 \section{Dataset: HistoriQA-ThirdRepublic}
 \label{sec:dataset}
 
-We build on HistoriQA-ThirdRepublic~\cite{historiqa}, a French
-historian-validated benchmark over three heterogeneous 1887 sources:
+We build on HistoriQA-ThirdRepublic~\cite{historiqa-pellet}, a French
+historian-validated benchmark over three heterogeneous 1887 sources
+digitised by the Biblioth\`eque nationale de France and distributed
+through Gallica\footnote{\url{https://gallica.bnf.fr}}:
 the parliamentary transcripts of the Chambre des D\'eput\'es
 (\textit{Les D\'ebats}) and two ideologically opposed dailies
 (\textit{Le Gaulois}, \textit{L'Intransigeant}). The benchmark
-contains  885 are multi-hop, split into
-571 newspaper\,$\to$\,\textit{D\'ebats} pairs and 314 cross-newspaper
-pairs. Full corpus statistics, historical context, and question-type
-breakdown are in Appendix~\ref{sec:appendix-dataset}
+contains 885 historian-validated multi-hop questions, split into
+571 newspaper-\textit{D\'ebats} pairs and 314 cross-newspaper
+pairs. Full corpus statistics, historical context, and the multi-hop
+question construction pipeline are in Appendix~\ref{sec:appendix-dataset}
 (Table~\ref{tab:corpus-stats}).
 
 \paragraph{Retrieval challenges that shape our method.}
-Three structural properties drive the framework: (i)~\emph{length
-heterogeneity} --- \textit{D\'ebats} documents are an order of
-magnitude longer than newspaper articles, ruling out a single chunking
-granularity and motivating per-cluster chunking
-(Section~\ref{sec:indexing-results}); (ii)~\emph{corpus imbalance} ---
-\textit{Les D\'ebats} is more than $6\times$ larger than the two
-newspapers combined and supplies 80.6\% of Naive-baseline top-3 hits
-even on newspaper-only gold~\cite{historiqa}; and (iii)~\emph{cross-source
-multi-hop reasoning} --- the multi-hop questions above require
-evidence from multiple corpora, a structure that top-$k$ cosine
-ranking cannot guarantee since the dominant corpus may consume all
-slots. Properties (ii) and (iii) motivate the source-routing (QRe)
-and uniform multi-source (UMS) strategies of
-Section~\ref{sec:retrieval-results}.
+Two structural properties drive the framework: (i)~\emph{corpus
+heterogeneity and imbalance}: \textit{Les D\'ebats} is more than
+$30\times$ larger than the two newspapers combined and its individual
+documents are an order of magnitude longer than newspaper articles,
+which both rules out a single chunking granularity (motivating
+per-cluster chunking, Section~\ref{sec:indexing-results}) and lets
+\textit{D\'ebats} supply 80.6\% of Naive-baseline top-3 hits even on
+newspaper-only gold; and (ii)~\emph{cross-source multi-hop reasoning}:
+the multi-hop questions above require evidence from multiple corpora,
+a structure that top-$k$ cosine ranking cannot guarantee since the
+dominant corpus may consume all slots. Together, these properties
+motivate the source-routing (QRe) and uniform multi-source (UMS)
+strategies of Section~\ref{sec:retrieval-results}.

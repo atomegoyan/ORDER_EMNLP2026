@@ -17,20 +17,35 @@
 \section{Methodology}
 \label{sec:methodology}
 
-We describe three mechanisms, all instantiating a common pattern of
-\emph{offline strategy discovery + online query-conditioned routing}:
+We describe three mechanisms, all instantiating a common pattern of offline strategy discovery + online query-conditioned routing:
 
 \paragraph{TC-Chunking} (Section~\ref{sec:indexing-methodology}):
 per-cluster selection of a document segmentation strategy ($\mathcal{S}_{\text{chunk}}$) on
 \textit{Les Débats}.
-\paragraph{TC-Metadata} (Section~\ref{sec:metadata-methodology}):
-per-cluster selection of a retrieval-time metadata strategy  : filter, rerank, hybrid ($\mathcal{S}_{\text{meta}}$) on the same collection. Section~\ref{sec:joint-methodology} studies the joint
-$\mathcal{S}_{\text{chunk}}\times\mathcal{S}_{\text{meta}}$ space to
-test whether the two index-side axes interact.
+\paragraph{TC-Metadata selection} (Section~\ref{sec:metadata-methodology}):
+per-cluster selection of a retrieval-time metadata strategy  : filter, rerank, hybrid ($\mathcal{S}_{\text{meta}}$) on the same collection.
 \paragraph{Structured retrieval} (Section~\ref{sec:two-phase}):
 a supervised query-routing classifier (QRe) followed by a
 uniform multi-source allocator (UMS) that controls how the
 retrieval budget is distributed across collections.
+
+\subsection{Experimental setup.}
+\label{sec:experimental-setup}
+All dense embeddings (documents and queries) are produced by Cohere
+\texttt{embed-v4.0} via the Cohere API and stored in three independent
+ChromaDB collections (one per corpus) under cosine distance. The
+clustering pipeline of the TC-* methods reduces training-question
+embeddings to 10 dimensions with UMAP~\cite{umap} and clusters them with
+HDBSCAN~\cite{hdbscan} (\texttt{min\_cluster\_size}{=}5). The
+query-routing classifier is an \texttt{sklearn} logistic regression with
+default hyperparameters. The metadata schema, chunking regexes, and
+cluster labels were drafted offline by Anthropic Claude Opus on debate samples and validated by a domain historian before
+being frozen into the pipeline; no LLM call occurs at indexing or query
+time. External baselines (HippoRAGv2~\cite{hipporagv2},
+LinearRAG~\cite{linearrag_2025}) are adapted from the authors' reference
+implementations with their default hyperparameters, the same Cohere
+embeddings, and the same Chroma collections. Full reproducibility
+details are in Appendix~\ref{sec:appendix-experimental-setup}.
 
 % The first two share the same UMAP transform~$T$, the same set of
 % centroids~$\{\mu_c\}$, and the same nearest-centroid inference rule
@@ -78,10 +93,8 @@ retrieval budget is distributed across collections.
 \label{sec:indexing-methodology}
 
 Standard RAG pipelines apply a single document segmentation strategy globally, an \emph{one-size-fits-all} assumption that ignores the structural diversity of
-historical questions.
-A comparative budget question and a biographical bridge-entity question require
-evidence at different granularities.
-We investigate a \textbf{task-conditioned indexing} framework that selects the
+historical questions : a comparative budget question and a biographical bridge-entity question might require evidence at different granularities.
+We investigate a task-conditioned indexing framework that selects the
 segmentation best suited to each question category, without any per-query
 re-indexing overhead.
 Re-chunking is restricted to \textit{Les Débats}, the most structurally complex
@@ -104,7 +117,8 @@ semantic queries.
 
 \begin{table}[htbp]
 \centering
-\tiny
+\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{l l p{3.1cm}}
 \toprule
 \textbf{Group} & \textbf{Strategy} & \textbf{Boundary signal} \\
@@ -130,6 +144,7 @@ semantic queries.
 \bottomrule
 \multicolumn{3}{l}{\footnotesize\textsuperscript{†}~Production baseline.}
 \end{tabular}
+}
 \caption{Fourteen chunking strategies evaluated on \textit{Les Débats}
 (1887 corpus), grouped by boundary signal type.
 Only this collection is re-chunked; newspaper collections retain
@@ -146,17 +161,13 @@ Appendix~\ref{sec:appendix-chunking} (Table~\ref{tab:chunking-strategies}).
 \label{sec:indexing-inference}
 
 In practice, we need a mechanism to assign an unseen query
-to a cluster at inference time and route it to the corresponding pre-built index.
-
-The framework is zero-shot in the sense that question-type labels can be predicted
+to a cluster at inference time and route it to the corresponding pre-built index. The framework is zero-shot in the sense that question-type labels can be predicted
 directly from the query text without labelling
 individual queries for the strategy selector.
 
 
 \paragraph{Training.}
-Training questions are embedded with Cohere \texttt{embed-v4.0}.
-Embeddings are reduced to 10 dimensions with UMAP~\cite{umap} and clustered with HDBSCAN~\cite{hdbscan}
-to obtain semantic question groups.
+Training questions are embedded, reduced and clustered to obtain semantic question groups.
 For each cluster $c$ (including the HDBSCAN noise group, label $-1$), all
 fourteen segmentation strategies are scored by Coverage@3 using the Naive
 Retriever ($k_0{=}3$, matching the evaluation budget); the best-scoring
@@ -169,7 +180,7 @@ UMAP space via $T$.
 The nearest centroid by Euclidean distance determines the cluster assignment
 $\hat{c}_q = \arg\min_{c}\;\|\mathbf{z}_q - \mu_c\|_2$.
 The query is then served from the pre-built index for strategy $s^{*}(\hat{c}_q)$
-and retrieval proceeds with the Naive Retriever at budget $k$.
+and retrieval proceeds with the Retriever at budget $k$.
 The marginal online cost is one UMAP projection and one nearest-neighbour
 lookup over $|\{\mu_c\}|$ centroids, negligible compared to embedding.
 Algorithm~\ref{alg:tc-inference} summarises both phases.
@@ -248,9 +259,7 @@ Algorithm~\ref{alg:tc-inference} summarises both phases.
 
 \paragraph{Evaluation protocol (shared across §\ref{sec:indexing-methodology}--\ref{sec:metadata-methodology}).}
 We compare each task-conditioned configuration against a fixed global baseline (\texttt{10000\_hierarchical} applied uniformly across all queries) using a 50/50 split, with $n_{\text{train}}{=}437$ and $n_{\text{test}}{=}438$ per seed, repeated across 5 random seeds for significance.
-HDBSCAN produces roughly 29 semantic clusters plus a noise group, all participating in strategy selection on equal footing.
-The UMAP transform $T$, centroids $\{\mu_c\}$, split, and inference rule of Algorithm~\ref{alg:tc-inference} are reused unchanged in §\ref{sec:metadata-methodology} and §\ref{sec:joint-methodology}; only the strategy set $\mathcal{S}$ and the map $s^{*}$ change.
-Extended per-cluster results and qualitative analysis appear in Appendices~\ref{sec:appendix-clustering-eval} and~\ref{sec:appendix-cluster-findings}.
+HDBSCAN produces semantic clusters plus a noise group, all participating in strategy selection on equal footing. Extended per-cluster results and qualitative analysis appear in Appendices~\ref{sec:appendix-clustering-eval} and~\ref{sec:appendix-cluster-findings}.
 % \begin{figure}[t]
 % \centering
 % \includegraphics[width=\linewidth]{images/tc_umap_clusters.pdf}
@@ -265,14 +274,14 @@ Extended per-cluster results and qualitative analysis appear in Appendices~\ref{
 % \end{figure}
 
 %------------------------------------------------------------
-\subsection{Task-Conditioned Metadata and joint Indexing}
+\subsection{Task-Conditioned Metadata Indexing}
 \label{sec:metadata-methodology}
 
 Chunking sets the \emph{granularity} of indexed units. A second, orthogonal
 axis controls \emph{which units} are eligible or how they are re-ranked,
 via structural metadata (document type, speaker count, document length).
-We apply the same task-conditioned framework on this axis, restricted to
-\textit{Les Débats} (newspaper retrieval is left unchanged).
+
+The UMAP transform $T$, centroids $\{\mu_c\}$, split, and inference rule of Algorithm~\ref{alg:tc-inference} are reused unchanged, only the strategy set $\mathcal{S}$ and the map $s^{*}$ change. The metadata pipeline is still restricted to \textit{Les Débats} (newspaper retrieval is left unchanged) and operates on top of the global \texttt{10000\_hierarchical} index.
 
 We define fourteen strategies in three families (Appendix Table~\ref{tab:metadata-strategies}): \textbf{filter} strategies
 pre-restrict the index with a Boolean predicate over metadata,
@@ -280,51 +289,6 @@ pre-restrict the index with a Boolean predicate over metadata,
 multiplicative boost, and \textbf{hybrid} strategies compose both. The
 \texttt{baseline} is unconditional retrieval. Full implementation details (predicates, $\alpha$ values, type-set definitions) are given in Appendix~\ref{sec:appendix-metadata}
 
-% \begin{table}[htbp]
-% \centering
-% \scriptsize
-% \begin{tabular}{l l p{3.0cm}}
-% \toprule
-% \textbf{Family} & \textbf{Strategy} & \textbf{Selector / scorer} \\
-% \midrule
-% Baseline & \texttt{baseline}\textsuperscript{†} & No filter, no rerank \\
-% \midrule
-% \multirow{6}{*}{Filter}
-%   & \texttt{exclude\_noisy}        & Drop \texttt{vote\_list}, \texttt{fragment}, headers, \dots \\
-%   & \texttt{debates\_only}         & Keep \texttt{doc\_type{=}debate} \\
-%   & \texttt{debates\_and\_legal}   & Keep debate + legal-text family \\
-%   & \texttt{min\_speakers\_2}      & \texttt{speaker\_count}$\geq 2$ \\
-%   & \texttt{min\_length\_500}      & \texttt{doc\_length}$\geq 500$ \\
-%   & \texttt{exclude\_noisy\_min\_length} & Noisy-types filter + length$\geq 200$ \\
-% \midrule
-% \multirow{3}{*}{Rerank}
-%   & \texttt{rerank\_type\_boost}    & Boost score by \texttt{doc\_type} prior \\
-%   & \texttt{rerank\_speaker\_boost} & Boost by \texttt{speaker\_count} \\
-%   & \texttt{rerank\_combined}       & Joint type$+$speaker boost \\
-% \midrule
-% \multirow{4}{*}{Hybrid}
-%   & \texttt{excl\_noisy\!+\!spk}   & Filter noisy $+$ speaker-boost \\
-%   & \texttt{deb\!+\!legal\!+\!spk} & Filter debate/legal $+$ speaker-boost \\
-%   & \texttt{deb\!+\!legal\!+\!cmb} & Filter debate/legal $+$ combined \\
-%   & \texttt{triple\!+\!cmb}        & Filter (type, speakers, length) $+$ combined \\
-% \bottomrule
-% \multicolumn{3}{l}{\footnotesize\textsuperscript{†}~Global control.}
-% \end{tabular}
-% \caption{Fourteen metadata strategies evaluated on \textit{Les Débats}.
-% Full implementation details (predicates, $\alpha$ values, type-set
-% definitions) are given in Appendix~\ref{sec:appendix-metadata}.}
-% \label{tab:metadata-families}
-% \end{table}
-
-Inference reuses the shared protocol (§\ref{sec:indexing-methodology}): $\mathcal{S}$ is instantiated as the metadata set above and $s^{*}$ is re-learned per retrieval strategy.
-The metadata pipeline operates on top of the global \texttt{10000\_hierarchical} index.
-
-We also want to tusdy the joint joint strategy space. The strategy set is the Cartesian product
-$\mathcal{S} = \mathcal{S}_{\text{chunk}} \times \mathcal{S}_{\text{meta}}$
-of size $14 \times 14 = 196$. For each pair $(c, m) \in \mathcal{S}$,
-the \textit{Les Débats} index is the $c$-chunked collection re-queried under
-the metadata predicate or reranker $m$; newspaper retrieval is left at the
-global default.  Inference again follows the shared protocol (§\ref{sec:indexing-methodology}), the only change is that each cluster now stores a \emph{pair} $s^{*}(c) = (c^{*}, m^{*})$ rather than a single index choice.
 
 \subsection{Structured Retriever}
 \label{sec:two-phase}
@@ -337,14 +301,14 @@ global default.  Inference again follows the shared protocol (§\ref{sec:indexin
 %   \label{fig:teaser}
 % \end{figure*}
 
-We evaluate four retrieval strategies for multi-source, multi-hop question answering
+We evaluate four retrieval strategies for multi-source and multi-hop question answering
 over three heterogeneous historical corpora: \textit{Le Gaulois} (newspaper),
 \textit{L'Intransigeant} (newspaper), and \textit{Les Débats} (parliamentary
 transcripts from the French Chambre des Députés), each indexed as an independent
-dense vector store using Cohere \texttt{embed-v4.0} embeddings.
+dense vector store (Appendix~\ref{sec:appendix-experimental-setup}).
 
 For each question $q$, we first embed it into a dense vector
-$\mathbf{v}_q = \textsc{Embed}(q)$ with Cohere \texttt{embed-v4.0}.
+$\mathbf{v}_q = \textsc{Embed}(q)$.
 This embedding plays two distinct roles in what follows:
 (i) it is the input to a supervised query-routing classifier $f_\theta$
 that predicts a source-pair label
@@ -368,8 +332,8 @@ $\textsc{source}(d)$, the collection it was retrieved from.
 
 We train a classifier $f_\theta$ that predicts, from a question alone, which
 collection types contain the evidence needed to answer it.
-The model is a logistic regression over Cohere \texttt{embed-v4.0} query
-embeddings, trained on a separate sample of 500 multi-hop questions with
+The model is a logistic regression over the query embedding $\mathbf{v}_q$,
+trained on a separate sample of 500 multi-hop questions with
 labelled source-pair annotations.
 Given the query embedding $\mathbf{v}_q$, it produces a predicted source-pair
 label
@@ -382,8 +346,7 @@ corresponding to the three source-pair classes
 \textit{Le Gaulois} $+$ \textit{L'Intransigeant} (\texttt{G+I}),
 \textit{L'Intransigeant} $+$ \textit{Les Débats} (\texttt{I+D}), and
 \textit{Le Gaulois} $+$ \textit{Les Débats} (\texttt{G+D}).
-On the held-out test set ($n{=}177$), raw 3-class accuracy is
-\textbf{80.2\%}.
+On the held-out test set ($n{=}177$), raw 3-class accuracy is 80.2\%.
 
 \paragraph{The 3-class problem is effectively binary.}
 Inspection of the 3-class confusion matrix (Appendix Table~\ref{tab:confusion}) reveals a characteristic error
@@ -394,7 +357,7 @@ is ever misclassified as the newspaper-only class \texttt{G+I}, and only one
 The internal \texttt{I+D}/\texttt{G+D} ambiguity is irrelevant for retrieval,
 since both classes activate the same set of collections (all three corpora).
 Collapsing the 3-class output to the binary decision \emph{``does this question
-require \textit{Les Débats}?''} yields \textbf{99.4\% accuracy} on the held-out
+require \textit{Les Débats}?''} yields 99.4\% accuracy on the held-out
 test set (176/177 correct: 114/114 on \textit{with Les Débats}, 62/63 on
 newspapers-only; see Table~\ref{tab:confusion-binary} in
 Appendix~\ref{sec:appendix-classifier}).

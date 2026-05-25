@@ -17,6 +17,13 @@ LLM-driven indexing complicates incremental deployment, and chunking remains
 a fixed-size, query-agnostic preprocessing step. These methods are also token-intensive, especially during graph construction. LinearRAG~\cite{linearrag_2025} has been proposed to reduce time and token consumption by scaling linearly with graph size, and shows that graph-based RAG often introduces relational noise that hurts generation. Closer to our work, Adaptive-RAG~\cite{adaptive_rag_2024} routes
 queries to retrieval strategies of varying complexity based on predicted
 question difficulty.
+In the context of historical reseatch, recent work highlights how OCR noise, orthographic
+variation, and semantic drift limit standard retrieval pipelines.
+\citet{Mudet_Bakkali_2025} stabilise recall on noisy historical corpora via
+semantic query expansion and Reciprocal Rank Fusion, but their evaluation
+is restricted to documents of at most 512 tokens and to a single source
+type leaving the cross-source, long-context regime of historical
+archives largely unexplored.
 Our query-routing contribution extends this intuition to the
 \emph{multi-source} setting, conditioning retrieval on predicted source
 relevance rather than complexity.
@@ -35,22 +42,9 @@ Standard multi-hop benchmarks provide no guidance for this cross-corpus
 setting.
 
 
-% Là tu parles de sources parlementaires, mais on en parle pas du tout avant donc je remplacerais par 
-
-\paragraph{RAG for historical archives.}
-Recent work highlights how OCR noise, orthographic
-variation, and semantic drift limit standard retrieval pipelines.
-\citet{Mudet_Bakkali_2025} stabilise recall on noisy historical corpora via
-semantic query expansion and Reciprocal Rank Fusion, but their evaluation
-is restricted to documents of at most 512 tokens and to a single source
-type --- leaving the cross-source, long-context regime of historical
-archives largely unexplored.
-
-% Il faudrait ajouter des référebces pour "Recent work", non ?
-% Pour moi : soit tu ajoutes des références, soit tu fusionnes avec la première section ("RAG et contexte long")
 
 %\paragraph{RAG and history.}
-%Recent work highlights how OCR noise, orthographic variation, and semantic drift limit standard retrieval pipelines. \citet{Mudet_Bakkali_2025} stabilise recall on noisy historical corpora via semantic query expansion and Reciprocal Rank Fusion, but their evaluation is restricted to documents of at most 512 tokens and to a single source type -- leaving the cross-source, long-context regime of parliamentary archives largely unexplored.
+%Recent work highlights how OCR noise, orthographic variation, and semantic drift limit standard retrieval pipelines. \citet{Mudet_Bakkali_2025} stabilise recall on noisy historical corpora via semantic query expansion and Reciprocal Rank Fusion, but their evaluation is restricted to documents of at most 512 tokens and to a single source type   leaving the cross-source, long-context regime of parliamentary archives largely unexplored.
 
 
 \paragraph{Segmentation in RAG.}

@@ -1,0 +1,79 @@
+% ============================================================
+%  Appendix H — Experimental Settings
+%  Centralised reproducibility details referenced from §3, §4,
+%  Appendix D and Appendix F.
+% ============================================================
+
+This appendix gathers the implementation details that are shared across
+all experiments reported in Sections~\ref{sec:methodology}
+and~\ref{sec:results}; the main paper points here rather than restating
+them at each use site.
+
+\paragraph{Embedding model and vector store.}
+All dense embeddings (documents and queries) are produced by Cohere
+\texttt{embed-v4.0}\footnote{\url{https://docs.cohere.com/docs/cohere-embed}}
+through the Cohere API, with the model's default 1{,}536-dim output and
+\texttt{input\_type} set to \texttt{search\_document} for indexing and
+\texttt{search\_query} at query time. Each of the three corpora
+(\textit{Le Gaulois}, \textit{L'Intransigeant}, \textit{Les D\'ebats}) is
+stored as an independent ChromaDB\footnote{\url{https://www.trychroma.com}}
+collection using the default HNSW index and \emph{cosine} distance.
+Embeddings are computed once and cached on disk; an API key is required to
+reproduce the indexing step.
+
+\paragraph{Clustering pipeline (TC-* methods).}
+Training-question embeddings are reduced to 10 dimensions with
+UMAP~\cite{umap} (\texttt{n\_components}{=}10, all other hyperparameters at
+the \texttt{umap-learn} defaults) and clustered with HDBSCAN~\cite{hdbscan}
+(\texttt{min\_cluster\_size}{=}5, all other hyperparameters at the
+\texttt{hdbscan} defaults). The noise label ($-1$) is retained as a
+regular cluster during strategy selection. Cluster assignment at inference
+time uses \emph{Euclidean} nearest centroid in the 10-D UMAP space; the
+\emph{cosine} distance of the embedding model is only used at retrieval
+time inside Chroma.
+
+\paragraph{Query-routing classifier.}
+The classifier $f_\theta$ of Section~\ref{sec:classifier} is
+\texttt{sklearn.linear\_model.LogisticRegression} with all default
+hyperparameters (L2 regularisation, \texttt{C}{=}1.0,
+\texttt{solver}{=}\texttt{lbfgs}, \texttt{max\_iter}{=}100), trained on 500
+multi-hop questions with labelled source-pair annotations and evaluated on
+a held-out set of 177. Input features are the raw Cohere
+\texttt{embed-v4.0} query embeddings; no dimensionality reduction or
+feature engineering is applied.
+
+\paragraph{External RAG baselines.}
+HippoRAGv2~\cite{hipporagv2} and LinearRAG~\cite{linearrag_2025} are
+adapted directly from the authors' public
+reference implementations\footnote{HippoRAGv2:
+\url{https://github.com/OSU-NLP-Group/HippoRAG}\\LinearRAG:
+\url{https://github.com/DEEP-PolyU/LinearRAG}}. We keep the upstream
+default hyperparameters in both cases (graph-construction prompts,
+retrieval depth, PPR damping factor for HippoRAGv2; linearised aggregation
+parameters for LinearRAG) and only substitute (i)~the embedding backbone
+with Cohere \texttt{embed-v4.0} and (ii)~the underlying passage store
+with the same three ChromaDB collections used by our pipeline, so that
+all systems consume identical evidence units.
+
+\paragraph{Offline metadata / clustering design loop.}
+The metadata schema (document-type taxonomy, speaker-count and
+document-length fields), the regex patterns underlying the chunking
+strategies of Appendix~\ref{sec:appendix-chunking}, and the cluster
+naming used in Appendix~\ref{sec:appendix-cluster-findings} were drafted
+by an offline analysis loop in which Anthropic Claude Opus was prompted
+on representative samples of \textit{Les D\'ebats} to propose candidate
+fields, patterns, and cluster labels. Every proposal was reviewed and
+either accepted, edited, or rejected by a domain historian before being
+frozen into the pipeline. Claude Opus is therefore a one-off
+\emph{design-time} analyst; it is never invoked at indexing or query
+time and adds no online cost.
+
+\paragraph{Evaluation protocol.}
+Unless noted otherwise, all task-conditioned results use a 50/50
+train/test split of the labelled question set
+($n_{\text{train}}{=}437$, $n_{\text{test}}{=}438$) repeated over 5
+random seeds, with significance assessed by a Bonferroni-corrected
+paired $t$-test across seeds ($^{***}p{<}0.001$, $^{**}p{<}0.01$,
+$^{*}p{<}0.05$, ns~$=$~not significant); see also
+Appendix~\ref{sec:appendix-metrics} for the full Coverage@$k$ and
+Recall@$k$ definitions.

@@ -44,7 +44,7 @@ signal aligns with all question types.
 \paragraph{Cluster $-1$ ($n=72$).}
 The largest baseline-optimal cluster groups comparative tone questions between
 \emph{L'Intransigeant} and \emph{Le Gaulois} about named parliamentary speakers
-and debates --- the Rouvier/pr\'{e}fet de police decorations scandal, the
+and debates the Rouvier/pr\'{e}fet de police decorations scandal, the
 \emph{budget des cultes}, military exemptions, and agricultural protection.
 Questions consistently ask which newspaper is more critical or more favourable
 toward a given deputy's intervention:
@@ -60,7 +60,7 @@ toward a given deputy's intervention:
 \end{itemize}
 \texttt{10000\_hierarchical} is already optimal (score $= 0.590$, $\Delta = 0$).
 These questions require co-retrieving the newspaper commentary \emph{and} the
-corresponding parliamentary extract --- together spanning 500--2\,500 characters.
+corresponding parliamentary extract together spanning 500--2\,500 characters.
 Only a 10\,000-character chunk is large enough to contain both sources in one
 retrievable unit; narrower strategies split one document from the other, making
 the paired comparison impossible at $k{=}3$.
@@ -81,7 +81,7 @@ the military law before the Senate:
     soutien du gouvernement \`{a} la loi militaire devant le S\'{e}nat ?''}
 \end{itemize}
 Score $= 0.455$, $\Delta = 0$.
-The topical incoherence --- education, defence budgets, Senate relations --- means
+The topical incoherence education, defence budgets, Senate relations means
 no structural signal consistently aligns with the full cluster; questions about
 ministerial positions span multiple speaker turns and sessions that only a
 large-context chunk can hold together.
@@ -103,8 +103,8 @@ critiquing the commission:
 \end{itemize}
 Score $= 0.375$, $\Delta = 0$.
 Cross-chamber budget procedures involve extended deliberations
-(Chambre $\to$ Senate $\to$ Chambre); the full answer context --- the rapporteur's
-summary, the criticism, the government's position, and the final vote --- spans
+(Chambre $\to$ Senate $\to$ Chambre); the full answer context the rapporteur's
+summary, the criticism, the government's position, and the final vote spans
 more than any finer-grained chunking strategy can hold together.
 
 \paragraph{Cluster $17$ ($n=15$).}
@@ -158,7 +158,7 @@ re-election tensions:
   \item \textit{``Quel lien la presse \'{e}tablit-elle entre le scrutin pour la
     vice-pr\'{e}sidence et les tensions politiques ?''}
 \end{itemize}
-Score $= 0.231$, $\Delta = 0$ --- the \emph{lowest} absolute score in the entire
+Score $= 0.231$, $\Delta = 0$ the \emph{lowest} absolute score in the entire
 experiment, across all strategies.
 Internal elections are purely procedural: the parliamentary text is a brief
 formulaic record while the newspaper provides the political analysis; no chunking
@@ -185,7 +185,7 @@ together regardless of topic.
 
 \paragraph{Cluster $23$ ($n=8$).}
 M.~Camille Pelletan's speeches against the wheat import tariff (\emph{droit sur
-le bl\'{e}}) --- his critique of the agricultural commission, arguments about
+le bl\'{e}}) his critique of the agricultural commission, arguments about
 consumer price impacts, and alternative solutions for farmers:
 \begin{itemize}
   \item \textit{``En 1887, quels arguments M.~Camille Pelletan avance-t-il contre
@@ -221,7 +221,7 @@ surrounding debate context that a 10k chunk preserves.
 
 \paragraph{Cluster $27$ ($n=15$).}
 M.~Rouvier (President of the Council) arguing \emph{against} the 5-franc grain
-tariff --- analysing deputies' electoral \emph{professions de foi}, addressing
+tariff analysing deputies' electoral \emph{professions de foi}, addressing
 hesitant colleagues, and responding to M.~Lejeune on new agricultural methods:
 \begin{itemize}
   \item \textit{``En 1887, comment M.~Rouvier tente-t-il de convaincre les
@@ -460,7 +460,7 @@ Three clusters benefit from topic-coherent segmentation with vote-list removal.
 These are the clusters where questions ask \emph{which newspaper} frames a policy
 topic in which editorial light.
 Topic-based segmentation mirrors how newspaper articles summarise parliamentary
-debates --- by policy topic, not by speaker turn or amendment boundary --- and the
+debates by policy topic, not by speaker turn or amendment boundary and the
 \texttt{noVotes} variant removes procedural tallies that are semantically empty
 for editorial comparison.
 
@@ -485,7 +485,7 @@ Topic-based segmentation groups all interventions on this policy sub-topic;
 The still-modest score reflects difficulty retrieving minority-opinion passages in
 newspapers that covered this sub-question only peripherally.
 
-\paragraph{Cluster $2$ ($n=269$) --- largest cluster.}
+\paragraph{Cluster $2$ ($n=269$) largest cluster.}
 The dominant cluster groups broad comparative media analysis questions across
 virtually all parliamentary topics.
 Questions are almost exclusively framed as ``Quel journal\ldots'' /
@@ -503,7 +503,7 @@ Best strategy: \texttt{S9\_topic\_noVotes} (score $= 0.335$, $\Delta = +0.190$;
 \textbf{largest absolute gain of the entire experiment}).
 Topic segmentation mirrors newspaper organisation by policy theme; \texttt{noVotes}
 removes procedural tallies that contaminate the semantic embedding signal.
-The magnitude --- $+0.190$ on 269 questions --- is the most practically
+The magnitude $+0.190$ on 269 questions is the most practically
 significant result of the study.
 
 \paragraph{Cluster $24$ ($n=12$).}
@@ -532,7 +532,7 @@ strips the rapid procedural votes.
 Five strategies each win exactly one cluster, revealing structural niches that no
 general-purpose approach covers.
 
-\paragraph{Cluster $4$ ($n=11$) --- \texttt{S4\_president}.}
+\paragraph{Cluster $4$ ($n=11$) \texttt{S4\_president}.}
 M.~Gaillard's interpellation on the illegal psychiatric commitment of Baron
 Seilli\`{e}re under the 1838 internment law:
 \begin{itemize}
@@ -551,7 +551,7 @@ Parliamentary interpellations are formally opened and closed by the Assembly
 President; \texttt{S4} chunks at ``M.~le pr\'{e}sident'' markers, delivering the
 entire interpellation arc as a single self-contained unit.
 
-\paragraph{Cluster $12$ ($n=5$) --- \texttt{S3\_window3}.}
+\paragraph{Cluster $12$ ($n=5$) \texttt{S3\_window3}.}
 A focused two-deputy exchange: M.~Chevalier opposing M.~Sabatier's
 succession/inheritance reform proposal:
 \begin{itemize}
@@ -569,7 +569,7 @@ A 3-turn sliding window (overlap $= 1$) captures the proposal $\to$ objection
 $\to$ response structure precisely; the record score validates that perfect
 structural alignment yields very high retrieval quality.
 
-\paragraph{Cluster $13$ ($n=18$) --- \texttt{baseline\_10k}.}
+\paragraph{Cluster $13$ ($n=18$) \texttt{baseline\_10k}.}
 A heterogeneous procedural mix: M.~de~Douville-Maillefeu contesting his
 expulsion; M.~de~Mortillet on taxing foreign long-term residents;
 M.~Yves-Guyot vs.\ M.~Jules Roche on direct tax reform:
@@ -588,9 +588,9 @@ hierarchical structure occasionally creates splits at ``M.~le pr\'{e}sident''
 markers that interrupt rather than delimit the relevant procedural context in this
 heterogeneous cluster.
 
-\paragraph{Cluster $18$ ($n=3$) --- \texttt{fixed\_2000}.}
+\paragraph{Cluster $18$ ($n=3$) \texttt{fixed\_2000}.}
 M.~Dugu\'{e} de la Fauconnerie contesting the validity of a vote on an
-agricultural budget amendment --- an alleged irregular ballot under Article~95 of
+agricultural budget amendment an alleged irregular ballot under Article~95 of
 the parliamentary standing orders:
 \begin{itemize}
   \item \textit{``En 1887, quelle irr\'{e}gularit\'{e} M.~Dugu\'{e} de la
@@ -608,7 +608,7 @@ A 2000-character fixed window isolates it where the 10k chunk fails entirely ---
 the clearest demonstration that very large chunks can be completely useless for
 narrow specific queries.
 
-\paragraph{Cluster $28$ ($n=27$) --- \texttt{S8\_vote}.}
+\paragraph{Cluster $28$ ($n=27$) \texttt{S8\_vote}.}
 The final grain tariff vote: M.~Achard opposing the 5-franc duty, M.~Peytral
 critiquing it, M.~Deschanel defending it, M.~Th\'{e}venet's position:
 \begin{itemize}
@@ -710,7 +710,7 @@ Cluster~$18$ ($n = 3$) demonstrates that the 10k baseline can retrieve
 \emph{nothing} (score $= 0.0$) when a question targets a brief specific incident
 embedded in a long session.
 Medium fixed-size chunks recover the signal where the baseline fails entirely.
-This underscores that a strategy ensemble --- not a single chunking scheme --- is
+This underscores that a strategy ensemble not a single chunking scheme is
 required for robust retrieval across heterogeneous question types; maintaining
 multiple chunk indices and routing queries to the appropriate collection delivers
 these gains at no inference-time overhead.

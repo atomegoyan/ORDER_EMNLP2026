@@ -8,7 +8,7 @@
 % Historians do not pose interchangeable questions. They have specific needs, intentions, and thematic concerns that shape how they look for evidence. This diversity justifies task-specific approaches to RAG, whether in the indexing, retrieval, or answer generation phase.
 
 Retrieval-Augmented Generation (RAG) has become a standard paradigm for
-augmenting large language models (LLMs), particularly in settings
+augmenting Large Language Models (LLMs), particularly in settings
 involving out-of-distribution or domain-specific
 corpora~\cite{rag_2020,rag_survey}. Despite strong performance on
 generic benchmarks, these evaluations often fail to reflect the
@@ -26,7 +26,7 @@ RAG across the indexing, retrieval, and generation phases.
 
 % Standard RAG pipelines, even when enhanced with reranking, exhibit significant limitations in such settings. These limitations are exacerbated by highly imbalanced corpora, where retrieval systems tend to favour dominant sources, leading to biased or incomplete evidence aggregation. 
 
- % Recent work~\cite{hipporagv2,adaptive_chunking} has begun to address some of these issues by revisiting indexing and document segmentation strategies. However, two weaknesses persist: chunking and retrieval are addressed independently of each other, and both are treated independently of the query. This implicitly assumes that a single segmentation strategy and a unified retrieval scheme can perform well across all query types -- an assumption that, as we show, does not hold on complex historical corpora.
+ % Recent work~\cite{hipporagv2,adaptive_chunking} has begun to address some of these issues by revisiting indexing and document segmentation strategies. However, two weaknesses persist: chunking and retrieval are addressed independently of each other, and both are treated independently of the query. This implicitly assumes that a single segmentation strategy and a unified retrieval scheme can perform well across all query types   an assumption that, as we show, does not hold on complex historical corpora.
 
  % Our proposition rests on two intertwined claims. First, the optimisation of chunking and retrieval in RAG admits \emph{no one-size-fits-all solution}. Despite having an overall best chunking strategy, adding a query based chunk optimisation yields significativly better results. More generally the best segmentation, the best metadata filter, and the best source selection vary systematically with the type of question being asked.
  % Therefore, and it's our second claim chunking and retrieval strategies can and must be partly conditioned online on the user query, while the heavy lifting (index construction, strategy discovery) remains offline and conditioned on the document. Concretely, we precompute a small set of indices offline, and at inference time we route each query, at negligible online cost, to the index and retrieval configuration best suited to it. This combination of rejecting one-size-fits-all and splitting the optimisation across an offline document-conditioned axis and an online query-conditioned axis is the core of our proposal.
@@ -37,10 +37,10 @@ persist: chunking and retrieval are addressed independently of each
 other, and both are treated independently of the query. This
 \emph{one-size-fits-all} assumption that a single segmentation
 strategy and a unified retrieval scheme perform well across all query
-types does not hold on complex historical corpora. We therefore
+types does not hold on expert-domain corpora. We therefore
 argue that the optimisation should be split along two axes: an
-\emph{offline}, document-conditioned axis (index construction, strategy
-discovery) and an \emph{online}, query-conditioned axis that routes
+offline, document-conditioned axis (index construction, strategy
+discovery) and an online, query-conditioned axis that routes
 each query, at negligible cost, to the index and retrieval
 configuration best suited to it.
 
@@ -79,25 +79,18 @@ the third on the retrieval side (online source selection):
 question clusters offline, learn per cluster the segmentation
 that maximises retrieval coverage, and at inference route each
 query via nearest-centroid assignment to the corresponding
-pre-built index ($+7.5$~pp Coverage@3 over the global
-\texttt{10000\_hierarchical} baseline). Marginal online cost is
+pre-built index. Marginal online cost is
 one projection and one nearest-neighbour lookup.
 
 \paragraph{Query-conditioned metadata selection.} Reusing the
 same cluster topology, we learn per cluster the optimal metadata
-configuration (filter / rerank / hybrid) on \textit{Les D\'ebats}
-($+10.8$~pp Coverage@3 under a Naive Retriever; $+1.0$ to
-$+2.5$~pp under sophisticated retrievers).
+configuration (filter / rerank / hybrid) to improve results significativly both under a Naive and more sophisticated retrievers.
 
 \paragraph{Multi-source routing (QRe + UMS).} A supervised
-classifier predicts which corpora are required empirically a
-binary press-vs-parliamentary decision (99.4\% accuracy),
-which combined with a uniform per-source allocator (UMS) reaches
-Recall@3 of $52.3$ ($+16.4$ pp over the Naive Retriever,
-$+20.6$ pp over HippoRAGv2). The two components attack
-structurally distinct failure modes (source contamination
-vs.\ source starvation) and compose strictly.
+classifier predicts which corpora are required empirically for retrieval,
+%a binary press-vs-parliamentary decision (99.4\% accuracy),
+which combined with a uniform per-source allocator (UMS) obtains strong improvments over the Naive Retriever and state-of-the-art RAG methods. The two components attack
+structurally distinct failure modes (source contamination vs.\ source starvation) and compose strictly.
 
 These three mechanisms outperform both a naive RAG
-baseline and state-of-the-art methods that rely on a task-agnostic
-approach.
+baseline and state-of-the-art methods that rely on a graph-based approach.

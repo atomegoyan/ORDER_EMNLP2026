@@ -303,10 +303,11 @@ gold lies only in the two newspapers; on D\'ebats-gold questions
 TC-Chunking is mildly detrimental.
 
 \begin{table}[htbp]
-\centerin
+\centering
 \small
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.11}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{l r ccc}
 \toprule
 \textbf{Subset} & $n$
@@ -317,6 +318,7 @@ Full test set                       & 875        & $+5.4$  & $+6.3$  & $+6.2$  \
 \;\;Gold not in \textit{Les D\'ebats}& 314 (36\%) & $\mathbf{+16.2}$ & $\mathbf{+19.3}$ & $\mathbf{+19.1}$ \\
 \bottomrule
 \end{tabular}
+}
 \caption{Naive-Retriever $\Delta$ Coverage@$k$ (pp) on the held-out test
 set, decomposed by gold location. The aggregate gain is carried entirely
 by newspaper-only-gold questions.}
@@ -341,15 +343,15 @@ Section~\ref{sec:classifier}) filters \textit{Les D\'ebats} out of
 the candidate pool exactly on the newspaper-only questions on which
 TC-Chunking delivers its noise-suppression benefit. Once
 \textit{D\'ebats} is filtered, the noise-suppression channel that
-TC-Chunking exploits is no longer available --- both interventions are
+TC-Chunking exploits is no longer available both interventions are
 acting on the same 36\% of questions through the same mechanism, just
 implemented differently.
 
 Table~\ref{tab:tc-chunking-delta-by-retriever} confirms this is
 structural rather than a tuning artefact: on the subset where
-TC-Chunking can still mechanically act under QRe --- gold in
+TC-Chunking can still mechanically act under QRe gold in
 \textit{Les D\'ebats} \emph{and} \textit{Les D\'ebats} retained by the
-router ($n{=}283\pm3$ per seed, 64\% of test) --- the residual
+router ($n{=}283\pm3$ per seed, 64\% of test) the residual
 $\Delta$ is statistically zero ($-0.002\pm0.002$). Sweeping the
 strategy-selection score-$k$ used during training from 3 to 9 leaves
 this within $\pm 0.001$, ruling out the explanation that the chunking
@@ -357,9 +359,10 @@ oracle is mis-tuned for the routed pool.
 
 \begin{table}[htbp]
 \centering
-\tiny
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.15}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.1}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{l ccc}
 \toprule
 \textbf{Retriever} & \textbf{Subset} & $n$ & $\Delta$ Cov@3 \\
@@ -375,7 +378,8 @@ QRe         & score-$k = 9$ (above subset)        & $283{\pm}3$ & $\pm 0.001$   
 UMS         & full                                & 875        & $+0.2$            \\
 QRe~\&~UMS  & full                                & 875        & $+0.0$            \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \caption{TC-Chunking residual $\Delta$ Coverage@3 across retrievers and
 diagnostic subsets. The Naive lift is fully absorbed once routing
 (QRe) or quota allocation (UMS) is active; the QRe residual on the
@@ -389,8 +393,8 @@ The interaction between TC-Chunking and QRe should not be read as
 evidence that per-cluster chunking is ineffective. It is evidence that
 on this corpus the dominant failure mode under the Naive Retriever is
 \textit{D\'ebats}-induced source contamination, which two structurally
-different mechanisms --- per-cluster chunking and supervised
-source-routing --- both correct via the same channel. We expect
+different mechanisms per-cluster chunking and supervised
+source-routing both correct via the same channel. We expect
 TC-Chunking gains to be additive to routing on corpora where the
 dominant failure mode is not single-source contamination, e.g.\ in
 settings with multiple long, structurally heterogeneous collections.

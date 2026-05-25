@@ -15,17 +15,19 @@ mediation in the public sphere, with radically different rhetorical
 registers and political commitments.
 
 \paragraph{Corpora.}
-Three OCR collections from the Biblioth{\`e}que nationale de France:
+Three OCR collections obtained from Gallica, the Biblioth{\`e}que
+nationale de France digital library\footnote{\url{https://gallica.bnf.fr}}:
 \textit{Les Débats parlementaires} (parliamentary transcripts of the
 Chambre des Députés) and two ideologically opposed newspapers,
 \textit{Le Gaulois} (monarchist-conservative) and \textit{L'Intransigeant}
 (socialist-to-populist). Each collection is indexed as an independent
-dense vector store with Cohere \texttt{embed-v4.0}. Key statistics are
-in Table~\ref{tab:corpus-stats}.
+dense vector store (Appendix~\ref{sec:appendix-experimental-setup}). Key
+statistics are in Table~\ref{tab:corpus-stats}.
 
 \begin{table}[htbp]
 \centering
-\scriptsize
+\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
  & \multicolumn{2}{c}{\textit{Les Débats}} & \multirow{2}{*}{\makecell{\textit{Le}\\\textit{Gaulois}}} & \multirow{2}{*}{\makecell{\textit{L'Intr-}\\\textit{ansigeant}}} \\
@@ -38,17 +40,77 @@ Median tokens/doc &   279 &   716 & 802  & 317  \\
 Min--max tokens   & 1--63k & 143--63k & 51--4k & 6--1k \\
 \bottomrule
 \end{tabular}
+}
 \caption{Corpus statistics. \textit{Les Débats} is reported both raw and
-after filtering out non-debate sections (agendas, vote lists). All three
-collections are indexed independently with Cohere \texttt{embed-v4.0}.}
+after filtering out non-debate sections (agendas, vote lists).}
 \label{tab:corpus-stats}
 \end{table}
 
-\paragraph{Question typology.}
-The benchmark contains 1{,}782 questions (897 single-hop, 885 multi-hop).
-Multi-hop questions decompose along two axes: a \emph{source-pair} axis
-(571 newspaper $\to$ \textit{Les Débats}, 314 cross-newspaper) and a
-\emph{category} axis (Bridge-Entity, Comparative, Follow-up). All
-questions are in French and historian-validated; we refer to the
-original release~\cite{historiqa} for construction details and
-inter-annotator agreement.
+\paragraph{Multi-hop benchmark overview.}
+We evaluate exclusively on the multi-hop subset of
+HistoriQA-ThirdRepublic~\cite{historiqa-pellet}: 885 French, historian-validated
+questions that each require evidence from at least two distinct
+documents. These questions decompose along two orthogonal axes:
+a \emph{source-pair} axis (571 newspaper~$\to$~\textit{Les Débats},
+314 cross-newspaper) and a \emph{category} axis
+(Follow-up, Bridge-Entity, Comparative).
+
+\paragraph{Candidate pairing.}
+Multi-hop generation starts from a candidate-pairing stage that selects
+document pairs likely to support a single coherent question. All
+chunks are embedded with Cohere \texttt{embed-v4.0} and indexed in
+independent ChromaDB collections (one per corpus); pairs are scored by
+cosine similarity and retained above a fixed threshold $\tau{=}0.7$
+calibrated on a held-out historian-annotated sample. Two pairing modes
+are used:
+\begin{itemize}[leftmargin=1.2em,itemsep=0.15em,topsep=0.25em]
+  \item \textit{Newspaper $\to$ Les Débats} (571 questions). For each
+    newspaper chunk, the top-1 most similar parliamentary passage is
+    paired with it; this direction is preferred over the reverse
+    (Débats $\to$ newspaper) to bound the candidate count and maximise
+    the diversity of reasoning chains.
+  \item \textit{Cross-newspaper} (Gaulois $\leftrightarrow$
+    L'Intransigeant, 314 questions). All inter-newspaper pairs above
+    $\tau$ are kept, with an additional temporal constraint that
+    publication dates differ by at most seven days, ensuring the two
+    articles discuss the same news cycle.
+\end{itemize}
+Pairs purely internal to \textit{Les Débats} were excluded: multi-hop
+reasoning over adjacent or identical sessions yields limited
+perspective diversity. Pairing across the press/parliament boundary
+instead exposes the interpretive gap between official transcripts and
+their mediation by partisan dailies.
+
+\paragraph{Historian-in-the-loop generation.}
+For each retained pair, a generation prompt is issued to Cohere
+\texttt{command-a}. Prompts were iteratively refined with the
+domain historian on our team and define three question categories,
+inspired by HotpotQA~\cite{hotpotqa_2018}:
+\begin{itemize}[leftmargin=1.2em,itemsep=0.15em,topsep=0.25em]
+  \item \textit{Follow-up}: an opinion or fact stated in one source and
+    the reaction it elicits in the other (e.g., a debate intervention
+    and its press commentary).
+  \item \textit{Bridge-Entity}: a shared referent (person, institution,
+    event) that licenses a chain from one passage to the other.
+  \item \textit{Comparative}: contrast between the positions defended in
+    each source.
+\end{itemize}
+The model returns a structured JSON object per question with fields
+\texttt{question}, \texttt{answer},
+\texttt{supporting\_passages.\{debate,journal\}},
+\texttt{reasoning\_type} (\textit{factuel, chronologique, causal,
+comparatif, critique/inférentiel}) and \texttt{difficulty}
+(\textit{easy/medium/hard}), or the sentinel string
+\texttt{AUCUNE QUESTION} when the pair does not license a genuine
+multi-hop question. Prompts forbid vague back-references
+(\textit{``selon l'article''}) and enforce that questions be
+self-contained (explicit date, topic, and main actors).
+
+\paragraph{Validation and release.}
+All retained questions were reviewed by the team historian; questions
+relying on hallucinated content or trivially answerable from a single
+source were discarded. The full system prompts (five variants, one per
+category $\times$ source-pair combination), few-shot examples, and the
+filtering pipeline are documented in the companion data
+paper~\cite{historiqa-pellet} and released in the accompanying
+repository.\footnote{\url{https://anonymous.4open.science/r/ORDER_EMNLP2026-BEC6/}}

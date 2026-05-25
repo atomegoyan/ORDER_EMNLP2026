@@ -9,9 +9,11 @@
 %    \usepackage{makecell}
 % ============================================================
 
-The query-routing classifier is a multinomial logistic regression over Cohere
-\texttt{embed-v4.0} query embeddings, trained on 500 multi-hop questions with
-labelled source-pair annotations and evaluated on a held-out set of 177
+The query-routing classifier is a multinomial logistic regression
+(\texttt{sklearn} default hyperparameters; see
+Appendix~\ref{sec:appendix-experimental-setup}) over the query embedding
+$\mathbf{v}_q$, trained on 500 multi-hop questions with labelled
+source-pair annotations and evaluated on a held-out set of 177
 questions.
 The body of the paper (§\ref{sec:classifier}) reports the headline numbers:
 80.2\% raw 3-class accuracy and 99.4\% binary routing accuracy.

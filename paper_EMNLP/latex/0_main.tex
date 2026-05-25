@@ -233,10 +233,14 @@
 % \end{abstract}
 
 \begin{abstract}
-Retrieval-Augmented Generation (RAG) pipelines typically rely on a fixed indexing and retrieval configuration determined at preprocessing time. This one-size-fits-all design is ill-suited to domain-expert settings, where heterogeneous queries require different chunking granularities, metadata constraints, and source-selection strategies. As a result, configurations that are effective for one class of queries often perform poorly for others.
-We introduce ORDER (Optimal Routing for Dynamic Evidence Retrieval) : a query-conditioned RAG framework that jointly adapts indexing and retrieval to the incoming query. Our approach first discovers semantic clusters of questions and learns, for each cluster, the optimal chunking strategy together with the most effective metadata filtering and reranking configuration. At inference time, queries are routed to the appropriate pre-built index through nearest-centroid assignment.
+Retrieval-Augmented Generation (RAG) pipelines typically rely on a fixed indexing and retrieval configuration determined at preprocessing time. This one-size-fits-all design is ill-suited to domain-expert settings, where heterogeneous queries require different chunking granularities, metadata constraints, and source-selection strategies. As a result, configurations that are effective for one family of queries often perform poorly for others.
+In this paper, we introduce ORDER (Optimal Routing for Dynamic Evidence Retrieval), a query-conditioned RAG framework that jointly adapts indexing and retrieval to the incoming query. 
+Our approach first discovers semantic clusters over a given set of questions associated to a corpus and learns, for each cluster, a chunking strategy together with a suited metadata filtering and reranking configuration.
+At inference time, queries are routed to the appropriate pre-built index through nearest-centroid assignment.
 To further improve retrieval, we propose a supervised query router (QRe) that predicts which collections are most likely to contain relevant evidence, coupled with a Uniform Multi-source Sampler (UMS) that allocates the retrieval budget evenly across the selected sources.
-We evaluate our framework on large-scale, heterogeneous historical archives and show that conditioning both indexing and retrieval on the query consistently outperforms both naive baselines and strong state-of-the-art RAG systems. Our results demonstrate that adaptive, query-aware retrieval pipelines provide a more effective alternative to globally fixed RAG configurations in complex expert-domain environments. Full implementation details are available in the code repository.\footnote{Code available at \href{https://github.com/atomegoyan/debattre-generate-questions.git}{GitHub}.}
+We evaluate our framework on large-scale, heterogeneous historical archives and show that conditioning both indexing and retrieval on the query consistently outperforms both naive baselines and strong state-of-the-art RAG systems  in complex expert-domain environments.
+% REPETITION ? Our results demonstrate that adaptive, query-aware retrieval pipelines provide a more effective alternative to globally fixed RAG configurations in complex expert-domain environments. 
+Full implementation details are available in the code repository.\footnote{Code available at \href{https://anonymous.4open.science/r/ORDER_EMNLP2026-BEC6/README.md}{Anonymous GitHub}.}
 
 \end{abstract}
 
@@ -283,16 +287,16 @@ We evaluate our framework on large-scale, heterogeneous historical archives and 
 %%   limitations of oracle indexing, historical corpus caveats).
 \section{Conclusion}
 
-We have argued and empirically supported that retrieval in
+We have shown that retrieval in
 domain-specific RAG admits \emph{no one-size-fits-all} indexing or
 retrieval strategy, and that the optimisation should be split across an
 offline document-conditioned axis (index construction, strategy
 discovery) and an online query-conditioned axis (routing). On a
-historical-press benchmark built from \textit{Les Débats} and a
+historical-press benchmark built from Parliamentary debates and two
 companion newspaper, three mechanisms instantiate this position:
 (i) query-conditioned chunking, (ii) query-conditioned metadata
 strategies, and (iii) a learned multi-source query-rerouting classifier
-together with a uniform multi-source retriever (UMS). Each mechanism
+together with a uniform multi-source retriever. Each mechanism
 yields measurable gains over a global baseline, and the largest lifts
 arise when task-conditioned indexing is paired with the weakest
 retrieval routing (Naive), with smaller but consistent gains under QRe
@@ -305,12 +309,39 @@ corpora.
 \section*{Limitations}
 
 \paragraph{Corpus and temporal scope.} Our benchmark is built from a
-narrow slice of late-19th-century French parliamentary debates and one
-companion newspaper. The cluster structure, the optimal per-cluster
-strategies, and the source-imbalance patterns we observe are likely to
-shift on other periods, languages, or document genres. We do not claim
-that the specific strategy maps transfer; we claim only that the
+narrow slice of late-19th-century French sources: parliamentary debates
+(\textit{Les D\'ebats parlementaires}) and two companion daily
+newspapers (\textit{Le Gaulois}, \textit{L'Intransigeant}), all from the
+year 1887. The cluster structure, the optimal per-cluster strategies,
+and the source-imbalance patterns we observe are likely to shift on
+other periods, languages, or document genres. We do not claim that the
+specific strategy maps transfer; we claim only that the
 \emph{methodology} of task-conditioning is corpus-agnostic.
+
+\paragraph{Multi-hop-only evaluation.} Retrieval and routing strategies
+are evaluated exclusively on the 885 historian-validated multi-hop
+questions of HistoriQA-ThirdRepublic. Single-hop questions from the
+original release were excluded because they do not exercise the
+cross-source routing behaviour that motivates our methodology; this
+leaves open whether the same task-conditioned strategies would help, hurt,
+or be neutral on single-hop traffic in a deployed system.
+
+\paragraph{LLM-generated benchmark questions.} Questions were drafted
+by Cohere \texttt{command-a} from semantically-paired passages and then
+filtered by a domain historian. Despite the human-in-the-loop
+validation, the candidate distribution is shaped by the generator's
+biases (preferred phrasings, surface lexical overlap with the supporting
+passages), which may inflate dense-retrieval scores relative to truly
+adversarial human-written questions and partially explain BM25's poor
+showing.
+
+\paragraph{Dependence on a single embedding family.} All dense indices,
+the routing classifier features, and the question passage similarities
+used for benchmark construction rely on Cohere \texttt{embed-v4.0}.
+We do not measure how the per-cluster strategy maps or the QRe / UMS
+advantages transfer to other embedding families (e.g.,
+open-weights multilingual encoders), and the reported recall numbers
+are not directly comparable to systems built on different encoders.
 
 \paragraph{Oracle indexing is not yet end-to-end.} The per-cluster
 strategy maps are learned offline using gold retrieval signals on a
@@ -327,6 +358,15 @@ here. Retrieval gains do not mechanically translate into answer-quality
 gains, and the interaction between task-conditioned retrieval and
 modern long-context LLMs deserves a dedicated study.
 
+\paragraph{Limited baseline coverage.} We compare against BM25,
+HippoRAGv2, and LinearRAG as external baselines, plus the Naive Retriever
+of the original benchmark. We do not include reranker cascades, learned
+sparse retrievers (e.g.\ SPLADE), or fine-tuned dense retrievers, any of
+which could narrow the gap to S-RAG on the easier
+newspaper\,$\to$\,D\'ebats split. Our claim is that source
+routing and quota allocation are complementary to whichever ranker is
+used, not that the specific S-RAG numbers represent an absolute ceiling.
+
 \paragraph{Small training set for the routing classifier.} The QRe
 classifier and the cluster centroids are estimated from a few hundred
 annotated questions. Despite cross-validation and held-out evaluation,
@@ -335,8 +375,8 @@ the granularity of the question typology, especially for under-represented
 clusters.
 
 \paragraph{Statistical claims.} Reported deltas (in pp) are averaged
-over 5 random seeds on a 50/50 train/test split ($n_{\text{total}}{=}875$,
-$n_{\text{test}}{=}438$ per seed). Significance is assessed with a
+over 5 random seeds on a 50/50 train/test split
+($n_{\text{test}}{=}438$ per seed). Significance is assessed with a
 Bonferroni-corrected paired $t$-test across seeds; we report
 $^{***}p{<}0.001$, $^{**}p{<}0.01$, $^{*}p{<}0.05$, and~ns for
 non-significant differences. Differences flagged ns should be
@@ -346,10 +386,20 @@ interpreted as suggestive rather than conclusive.
 
 \paragraph{Source material.} All primary sources are public-domain
 historical newspapers and parliamentary records, digitised by national
-heritage institutions. No personal data of living individuals is
-involved. Quoted speakers are 19th-century public figures acting in
-their official capacity, and we have not augmented the corpus with any
-private or unpublished material.
+heritage institutions (BnF / Gallica). No personal data of living
+individuals is involved. Quoted speakers are 19th-century public figures
+acting in their official capacity, and we have not augmented the corpus
+with any private or unpublished material.
+
+\paragraph{LLM-generated questions and provenance.} The benchmark
+questions are produced by a commercial LLM (Cohere \texttt{command-a})
+from paired passages and then validated by a domain historian.
+We disclose this provenance to avoid presenting the benchmark as a
+fully human-authored gold standard; downstream users should be aware
+that residual generator-style artefacts (preferred phrasings, lexical
+shortcuts) may influence absolute scores. All retained questions, the
+generation prompts, and the filtering pipeline are released so that the
+LLM dependency is auditable.
 
 \paragraph{Historical bias.} The corpus reflects the political,
 gendered, and colonial biases of late-19th-century French public
@@ -358,6 +408,9 @@ amplify those biases if used uncritically (e.g.\ as a question-answering
 oracle for non-expert audiences). Our intended use is to support
 \emph{expert historical research}, where such biases are themselves an
 object of study, not to provide neutral factual answers to lay users.
+OCR noise on 19th-century typography can also distort proper nouns and
+figures; any downstream answer surface must be cross-checked against the
+scanned originals before being cited.
 
 \paragraph{Annotation.} Question clusters and gold passages were
 annotated by domain experts compensated at fair institutional rates. No
@@ -366,9 +419,10 @@ research purpose and consented to the use of their annotations.
 
 \paragraph{Compute and environmental cost.} Index construction for the
 14 chunking $\times$ 14 metadata grid is a one-off offline cost
-dominated by embedding computation. We report no model training beyond
-a small logistic-regression routing classifier; no large model was
-fine-tuned for this work. The online routing cost is negligible.
+dominated by embedding computation through a commercial API. We report
+no model training beyond a small logistic-regression routing classifier;
+no large model was fine-tuned for this work. The online routing cost
+(one classifier call per query) is negligible.
 
 \paragraph{Dual use.} The methodology is designed for historical
 information retrieval. We do not foresee a direct dual-use risk;
@@ -376,11 +430,24 @@ however, task-conditioned retrieval could in principle be applied to
 politically sensitive contemporary corpora to bias which sources are
 surfaced for which queries. We caution against deploying per-cluster
 strategy maps without an audit of the resulting source-coverage
-distribution.
+distribution, particularly the QRe routing decisions, which by design
+exclude entire source collections from the candidate pool for certain
+query types.
 
-\section*{Acknowledgments}
-%% TODO: add real acknowledgments
-% \todo{Write Acknowledgments --- funding, data providers, annotators.}
+\paragraph{Use of AI assistants.} We disclose the use of AI assistants
+in the preparation of this work. Large language models (used in both
+chatbot and agentic modes) supported (i) language polishing of the
+manuscript (rewording, tightening, and grammar correction; no claims,
+numerical results, or citations were generated by the assistant),
+(ii) iteration on figure design and table formatting, and
+(iii) cleanup and refactoring of the experimental code. All
+scientific content, experimental design, analysis decisions, and final
+wording are the authors' own responsibility, and all AI-assisted output
+was reviewed and verified before inclusion.
+
+% \section*{Acknowledgments}
+% %% TODO: add real acknowledgments
+% % \todo{Write Acknowledgments  - funding, data providers, annotators.}
 
 
 
@@ -421,5 +488,11 @@ distribution.
 \section{Metrics: Formal Definitions}
 \label{sec:appendix-metrics}
 \input{G_metrics}
+
+\section{Experimental Settings}
+\label{sec:appendix-experimental-setup}
+\input{H_experimental_setup}
+
+\input{I_joint_analysis}
 
 \end{document}
